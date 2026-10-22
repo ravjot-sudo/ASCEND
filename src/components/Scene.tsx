@@ -1,11 +1,12 @@
 "use client";
 // Persistent WebGL layer (P2): the ASCEND artwork (word + scene layers) over a night sea; scroll sinks the camera under (P3).
 import * as THREE from "three";
-import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, Sparkles, useTexture } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { signal } from "@/lib/signal";
+import wordShapes from "./ascend-shapes.json";
 
 const ABOVE = new THREE.Color("#000000"), BELOW = new THREE.Color("#030303");
 const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -18,35 +19,41 @@ const noop = () => () => {};
 const artState = { t: 1 };
 
 // The ASCEND artwork lives inside the scene as two layers cut from the cover: the door-and-stairs scene (the word
-// knocked out) and the chrome word on transparency, so the word can move on its own like the reference's hero
-// wordmark. The click that enters sets a born-time (the picture settles from a slight over-scale, the pop) and
-// scrolling dissolves it into the sea. Contain-fit against the frustum; the art's black surround blends into the page.
+// knocked out) and the word itself as a real 3D object: the letter outlines traced from the artwork
+// (ascend-shapes.json), extruded and bevelled, with the artwork's own chrome lettering on the front face and mirror
+// chrome on the bevels and sides, so head-on it is the picture and as it turns it is a solid. The click that enters
+// sets a born-time (the picture settles from a slight over-scale, the pop) and scrolling dissolves it into the sea.
 //
-// Word effect (reference constants, rebuilt): flips in from pi and from 2x the camera distance over 1.5 s expo-out;
-// leans toward the pointer (0.15 rad, smoothed 0.08 per frame); red/blue split widens with the lean; scrolling turns
-// it back 0.08 pi, pushes it 0.3x further away and drifts it down 12% of its height.
+// Word motion (reference constants, rebuilt): flips in from pi and from 2x the camera distance over 1.5 s expo-out;
+// leans toward the pointer (0.15 rad) with soft smoothing (0.06 per frame) and a slow idle float; scrolling turns it
+// back 0.08 pi, pushes it 0.3x further away and drifts it down 12% of its height.
 const WORD = { w: 1340 / 1600, h: 588 / 1600, y: 0.5 - 406 / 1600 }; // crop of the 1600px cover, in cover units
-const LEAN = 0.15, EASE = 0.08, FLIP = Math.PI, DEPTH = 2, TURN = Math.PI * 0.08, RECEDE = 0.3, INTRO = 1.5;
-const SPLIT = { base: 0.0006, tilt: 0.0018 }; // uv units of the word texture: at most ~5px of red/blue spread
-const wordVert = /* glsl */ `varying vec2 v_uv; void main() { v_uv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
-const wordFrag = /* glsl */ `
-  uniform sampler2D u_tex; uniform vec2 u_split; uniform float u_alpha; varying vec2 v_uv;
-  void main() {
-    vec4 c = texture2D(u_tex, v_uv);
-    // red and blue sampled a hair apart; alpha stays the centre's so the silhouette does not double
-    float r = texture2D(u_tex, v_uv + u_split).r, b = texture2D(u_tex, v_uv - u_split).b;
-    gl_FragColor = vec4(r, c.g, b, c.a * u_alpha);
-    #include <colorspace_fragment>
-  }`;
+const LEAN = 0.15, EASE = 0.06, FLIP = Math.PI, DEPTH = 2, TURN = Math.PI * 0.08, RECEDE = 0.3, INTRO = 1.5;
 const expoOut = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t));
+
+function useWordGeometry() {
+  return useMemo(() => {
+    const { w, h, shapes } = wordShapes as { w: number; h: number; shapes: { outer: number[][]; holes: number[][][] }[] };
+    const P = ([x, y]: number[]) => new THREE.Vector2((x / w - 0.5) * WORD.w, (0.5 - y / h) * WORD.h);
+    const list = shapes.map((sh) => { const shape = new THREE.Shape(sh.outer.map(P)); shape.holes = sh.holes.map((hole) => new THREE.Path(hole.map(P))); return shape; });
+    // Front and back caps sample the artwork in cover units; side walls get a flat uv (their material has no map).
+    const uv: THREE.UVGenerator = {
+      generateTopUV: (_g, v, a, b, c) => [a, b, c].map((i) => new THREE.Vector2(v[i * 3] / WORD.w + 0.5, v[i * 3 + 1] / WORD.h + 0.5)),
+      generateSideWallUV: () => [new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2()],
+    };
+    const g = new THREE.ExtrudeGeometry(list, { depth: 0.014, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.0025, bevelSegments: 3, UVGenerator: uv });
+    g.translate(0, 0, -0.007); // slab centred on its pivot so it turns about its middle
+    return g;
+  }, []);
+}
 
 function HeroArt() {
   const [sceneTex, wordTex] = useTexture(["/media/ascend-scene.jpg", "/media/ascend-word.webp"], (loaded) => {
     for (const t of [loaded].flat()) t.colorSpace = THREE.SRGBColorSpace;
   });
+  const geo = useWordGeometry();
   const group = useRef<THREE.Group>(null!), word = useRef<THREE.Mesh>(null!), mat = useRef<THREE.MeshBasicMaterial>(null!);
-  const [uniforms] = useState(() => ({ u_tex: { value: null as THREE.Texture | null }, u_split: { value: new THREE.Vector2() }, u_alpha: { value: 1 } }));
-  const wmat = useRef<THREE.ShaderMaterial>(null!); // per-frame uniform writes go through the material
+  const cap = useRef<THREE.MeshPhysicalMaterial>(null!), side = useRef<THREE.MeshPhysicalMaterial>(null!);
   const born = useRef(0), tilt = useRef(new THREE.Vector2());
   useEffect(() => {
     const on = () => { born.current = performance.now(); };
@@ -54,7 +61,7 @@ function HeroArt() {
     addEventListener("undertow:entered", on);
     return () => removeEventListener("undertow:entered", on);
   }, []);
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera, clock }, dt) => {
     const cam = camera as THREE.PerspectiveCamera, calm = still();
     const fov = (cam.fov * Math.PI) / 180, dist = camera.position.z + 16;
     const visH = 2 * dist * Math.tan(fov / 2), visW = visH * cam.aspect;
@@ -65,18 +72,17 @@ function HeroArt() {
     g.position.x = calm ? 0 : g.position.x + (signal.mx * 0.35 - g.position.x) * Math.min(1, dt * 3);
     const fade = 1 - THREE.MathUtils.smoothstep(signal.progress, 0.22, 0.6);
     artState.t = fade;
-    mat.current.opacity = fade;
+    mat.current.opacity = fade; cap.current.opacity = fade; side.current.opacity = fade;
 
     // the word
     const intro = calm ? 1 : born.current ? expoOut(Math.min(1, since / INTRO)) : 0, n = 1 - intro, scroll = signal.progress;
     const t = tilt.current;
     if (calm) t.set(0, 0); else { const k = Math.min(1, EASE * dt * 60); t.x += (signal.mx - t.x) * k; t.y += (signal.my - t.y) * k; }
+    const float = calm ? 0 : Math.sin(clock.elapsedTime * 0.8) * 0.006;
     const w = word.current;
     w.rotation.set(t.y * LEAN + n * FLIP + scroll * TURN, t.x * LEAN, 0);
-    w.position.set(0, WORD.y - 0.12 * WORD.h * scroll, 0.002 - ((n * DEPTH + scroll * RECEDE) * dist) / S);
-    const split = calm ? 0 : SPLIT.base + (Math.abs(t.x) + Math.abs(t.y)) * SPLIT.tilt;
-    const u = wmat.current.uniforms;
-    u.u_tex.value = wordTex; u.u_split.value.set(split, split * 0.3); u.u_alpha.value = fade;
+    w.position.set(0, WORD.y - 0.12 * WORD.h * scroll + float, 0.03 - ((n * DEPTH + scroll * RECEDE) * dist) / S);
+    cap.current.emissiveIntensity = 1 + signal.level * 0.25;
   });
   return (
     <group ref={group} position={[0, 0.45, -16]}>
@@ -85,9 +91,10 @@ function HeroArt() {
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial ref={mat} map={sceneTex} transparent depthWrite={false} depthTest={false} fog={false} toneMapped={false} />
       </mesh>
-      <mesh ref={word} renderOrder={2} scale={[WORD.w, WORD.h, 1]}>
-        <planeGeometry args={[1, 1]} />
-        <shaderMaterial ref={wmat} vertexShader={wordVert} fragmentShader={wordFrag} uniforms={uniforms} transparent depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
+      <mesh ref={word} geometry={geo} renderOrder={2}>
+        {/* front/back: the artwork's lettering glowing through mirror chrome; bevels and sides: dark gunmetal chrome, like the art's outline */}
+        <meshPhysicalMaterial attach="material-0" ref={cap} color="#000000" emissive="#ffffff" emissiveMap={wordTex} emissiveIntensity={1} metalness={1} roughness={0.22} clearcoat={1} clearcoatRoughness={0.1} toneMapped={false} transparent fog={false} />
+        <meshPhysicalMaterial attach="material-1" ref={side} color="#6b6c72" metalness={1} roughness={0.28} clearcoat={0.5} envMapIntensity={0.8} transparent fog={false} />
       </mesh>
     </group>
   );

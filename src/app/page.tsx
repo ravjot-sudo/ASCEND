@@ -11,15 +11,15 @@ const U = (n: number) => `calc(var(--u) * ${n})`;
 const mt = (m: number, s?: number) => ({ "--mt": U(m), ...(s === undefined ? {} : { "--mt-s": U(s) }) }) as CSSProperties;
 
 
-const INTRO = "Undertow is four pieces about the pull you don't notice until you're already in it. No samples, no stems, no files: every note you hear is written live, the moment you press play.";
-const BIO = "Tidewell is a made-up artist from a made-up coast, a name for whatever the code decides to play tonight. The sound is cold and patient: long pads, a kick you feel more than hear, and melodies that never land in the same place twice.";
+const INTRO = "Four tracks built for the second the lights cut and the whole room breathes in. Big kicks, cold synths, and melodies you'll be screaming back at me by the second drop. Every one of them got road-tested on a dancefloor before it ever reached your speakers.";
+const BIO = "I live behind the decks. Weekends in rooms full of smoke and strobes, weekdays in a tiny studio chasing whatever hit hardest the night before. Hard kicks, trance leads, a little bit of punk, and a crowd that shouts every word back at me. That is the whole job, and I would do it for free.";
 const META = [
-  { n: "1", text: "The first loop ran overnight, a sine wave slowly drifting against itself.", link: { label: "Listen ↗", href: "#tracks" } },
-  { n: "2", text: "Four rooms by the sea, each night generated fresh. Nothing repeats.", link: { label: "Notes ↗", href: "#notes" } },
+  { n: "1", text: "The first loop came out of a soundcheck: one synth stab, left running while the room filled up.", link: { label: "Listen ↗", href: "#tracks" } },
+  { n: "2", text: "Every track gets played out before it's finished. If the floor doesn't move, it goes back to the studio.", link: { label: "Sequencer ↗", href: "/sequencer" } },
 ];
 const FACTS = [
-  { k: "A:", title: "How the first loop started.", text: "A single sine wave left running overnight, slowly detuned against itself. By morning it sounded like weather, and the rest of the record was built around that drift." },
-  { k: "B:", title: "Where the tide goes next.", text: "Four rooms by the sea, each playing the same patches through different speakers, each night generated fresh. Nothing is recorded, so nothing repeats." },
+  { k: "A:", title: "How one drop started it.", text: "One late set, one unreleased edit, and a crowd that wouldn't let me take it off. By the morning the clip was everywhere, and this EP started that night." },
+  { k: "B:", title: "Where we go next.", text: "Club nights, open-air shows, a new live set built around these four tracks and a lot of very late trains home. Come find me at the front." },
 ];
 const TITLES = [
   { cue: "I", title: "Undertow", meta: "84 BPM", order: "order-1" },
@@ -66,9 +66,9 @@ export default function Home() {
             <Mark className="col-span-2">● Undertow</Mark>
             <Lines as="p" text={INTRO} className="t-display mt-var col-indent col-span-4 [--indent:1] s:col-span-12 s:[--indent:5]" style={mt(-27)} />
             <Mark className="col-start-1 s:col-start-5" style={mt(10, 6)}>I</Mark>
-            <Lines as="p" text="The [[I|title track|1]] starts slow and heavy, a bass line that keeps stepping back down the same five notes like a tide that won't commit." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(10, 6)} />
+            <Lines as="p" text="The [[I|title track|1]] opens every set I play: a slow, heavy build, then a kick so wide the floor feels like it tilts under you." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(10, 6)} />
             <Mark className="col-start-1 s:col-start-5" style={mt(5, 18)}>II</Mark>
-            <Lines as="p" text="[[II|Salt Choir|2]] is the softest thing here: voices stacked in fifths, sung by nobody, slightly out of tune on purpose." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 18)} />
+            <Lines as="p" text="[[II|Salt Choir|2]] is my 4am record, for when half the room has gone home and the ones still standing don't want the night to end." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 18)} />
           </div>
           <div id="tracks" className="t-display mt-var col-start-2 col-end-[-1] flex flex-col leading-[calc(var(--u)*30)] s:col-start-1 s:block s:leading-[calc(var(--u)*45)]" style={mt(80, 120)}>
             <div className="contents s:flex s:justify-center" style={{ columnGap: U(27) }}>
@@ -79,9 +79,9 @@ export default function Home() {
             </div>
           </div>
           <Mark className="col-start-1 s:col-start-5" style={mt(70, 145)}>III</Mark>
-          <Lines as="p" text="[[III|Low Water|3]] is the one with teeth, square waves and a kick that sits right under the sternum." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(70, 145)} />
+          <Lines as="p" text="[[III|Low Water|3]] has teeth: square-wave bass, a break I chopped on a night train, and a drop I've watched turn a whole field into one jumping crowd." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(70, 145)} />
           <Mark className="col-start-1 s:col-start-5" style={mt(5, 9)}>IV</Mark>
-          <Lines as="p" text="[[IV|Riptide Hymn|4]] closes at a hundred and twenty: bright, major, and quicker than it should be. That's how riptides work." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 9)} />
+          <Lines as="p" text="[[IV|Riptide Hymn|4]] closes the record at a hundred and twenty. Big, bright and a little reckless. Hands up, eyes shut, that's the whole idea." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 9)} />
         </CueSection>
 
         <section aria-label="Film" className="site mt-var t-body text-mute" style={mt(110, 195)}>
