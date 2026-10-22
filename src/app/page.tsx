@@ -23,10 +23,10 @@ const FACTS = [
   { k: "B:", title: "Where we go next.", text: "Club nights, open-air shows, a new live set built around these four tracks and a lot of very late trains home. Come find me at the front." },
 ];
 const TITLES = [
-  { cue: "I", title: "Undertow", meta: "84 BPM", order: "order-1" },
-  { cue: "III", title: "Low Water", meta: "100 BPM", order: "order-3" },
-  { cue: "II", title: "Salt Choir", meta: "72 BPM", order: "order-2" },
-  { cue: "IV", title: "Riptide Hymn", meta: "120 BPM", order: "order-4" },
+  { cue: "I", title: "ACENSION", meta: "YouTube", order: "order-1" },
+  { cue: "III", title: "Twinflame", meta: "YouTube", order: "order-3" },
+  { cue: "II", title: "Circles", meta: "YouTube", order: "order-2" },
+  { cue: "IV", title: "Forest Walk", meta: "YouTube", order: "order-4" },
 ];
 
 function Mark({ children, className = "", style }: { children: string; className?: string; style?: CSSProperties }) {
@@ -65,7 +65,7 @@ export default function Home() {
               <img src="/media/ascend-stairs.jpg" alt="" className="absolute inset-0 size-full object-cover" />
             </div>
           </div>
-          <h1 className="sr-only">Tidewell, Undertow EP</h1>
+          <h1 className="sr-only">Tidewell, ASCEND EP</h1>
           <div className="t-body pointer-events-none absolute inset-x-0 top-0 h-svh text-mute">
             <p className="absolute top-1/2 hidden -translate-y-1/2 s:block" style={{ left: U(10) }}><Slide d={5}>EP</Slide></p>
             <p className="absolute top-1/2 hidden -translate-y-1/2 s:block" style={{ right: U(10) }}><Slide d={6}>01</Slide></p>
@@ -75,12 +75,12 @@ export default function Home() {
 
         <CueSection className="site mt-var text-mute" style={mt(45, 7)}>
           <div id="notes" className="contents">
-            <Mark className="col-span-2">● Undertow</Mark>
+            <Mark className="col-span-2">● ASCEND</Mark>
             <Lines as="p" text={INTRO} className="t-display mt-var col-indent col-span-4 [--indent:1] s:col-span-12 s:[--indent:5]" style={mt(-27)} />
             <Mark className="col-start-1 s:col-start-5" style={mt(10, 6)}>I</Mark>
             <Lines as="p" text="The [[I|title track|1]] opens every set I play: a slow, heavy build, then a kick so wide the floor feels like it tilts under you." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(10, 6)} />
             <Mark className="col-start-1 s:col-start-5" style={mt(5, 18)}>II</Mark>
-            <Lines as="p" text="[[II|Salt Choir|2]] is my 4am record, for when half the room has gone home and the ones still standing don't want the night to end." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 18)} />
+            <Lines as="p" text="[[II|Circles|2]] is my 4am record, for when half the room has gone home and the ones still standing don't want the night to end." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 18)} />
           </div>
           <div id="tracks" className="t-display mt-var col-start-2 col-end-[-1] flex flex-col leading-[calc(var(--u)*30)] s:col-start-1 s:block s:leading-[calc(var(--u)*45)]" style={mt(80, 120)}>
             <div className="contents s:flex s:justify-center" style={{ columnGap: U(27) }}>
@@ -91,15 +91,15 @@ export default function Home() {
             </div>
           </div>
           <Mark className="col-start-1 s:col-start-5" style={mt(70, 145)}>III</Mark>
-          <Lines as="p" text="[[III|Low Water|3]] has teeth: square-wave bass, a break I chopped on a night train, and a drop I've watched turn a whole field into one jumping crowd." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(70, 145)} />
+          <Lines as="p" text="[[III|Twinflame|3]] has teeth: square-wave bass, a break I chopped on a night train, and a drop I've watched turn a whole field into one jumping crowd." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(70, 145)} />
           <Mark className="col-start-1 s:col-start-5" style={mt(5, 9)}>IV</Mark>
-          <Lines as="p" text="[[IV|Riptide Hymn|4]] closes the record at a hundred and twenty. Big, bright and a little reckless. Hands up, eyes shut, that's the whole idea." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 9)} />
+          <Lines as="p" text="[[IV|Forest Walk|4]] closes the record at a hundred and twenty. Big, bright and a little reckless. Hands up, eyes shut, that's the whole idea." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 9)} />
         </CueSection>
 
         <section aria-label="Film" className="site mt-var t-body text-mute" style={mt(110, 195)}>
           <MediaPanel still="/media/moon-sea.webp" video="/media/moon-sea.mp4" label="Moonlight on open water, a rendered loop" className="col-span-4 aspect-[484/645] s:col-start-7" />
           <div className="col-span-2 col-start-11 hidden s:block" style={{ lineHeight: U(20) }}>
-            <Lines as="span" className="block" text="● Undertow" />
+            <Lines as="span" className="block" text="● ASCEND" />
             <Lines as="span" className="block" text="Open water (rendered)" />
           </div>
         </section>

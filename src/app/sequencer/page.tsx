@@ -3,8 +3,8 @@ import { Sequencer } from "@/components/Sequencer";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
-  title: "Sequencer, Undertow EP",
-  description: "Rebuild the Undertow tracks step by step: four kits, four patterns each, every sound synthesised in your browser.",
+  title: "Sequencer, ASCEND EP",
+  description: "Rebuild the ASCEND tracks step by step: four kits, four patterns each, every sound synthesised in your browser.",
 };
 
 export default function SequencerPage() {
@@ -12,7 +12,7 @@ export default function SequencerPage() {
     <>
       <div aria-hidden className="grain-layer pointer-events-none fixed inset-0 -z-[5]" />
       <SiteHeader active="sequencer" />
-      <h1 className="sr-only">Undertow sequencer</h1>
+      <h1 className="sr-only">ASCEND sequencer</h1>
       <Sequencer />
     </>
   );

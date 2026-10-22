@@ -1,5 +1,5 @@
 {
-  "name": "undertow",
+  "name": "ascend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -29,5 +29,6 @@
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "license": "UNLICENSED"
 }

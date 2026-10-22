@@ -12,7 +12,7 @@ export type Kit = { slug: string; title: string; bpm: number; root: number; scal
 const four = (...s: number[]) => [s, s, s, s];
 export const KITS: Kit[] = [
   {
-    slug: "undertow", title: "Undertow", bpm: 84, root: 45, scale: [0, 3, 5, 7, 10], gain: 0.9,
+    slug: "undertow", title: "ACENSION", bpm: 84, root: 45, scale: [0, 3, 5, 7, 10], gain: 0.9,
     rows: [
       { label: "Kick", voice: "kick", original: [[1, 9], [1, 9, 11], [1, 9], [1, 9, 13]] },
       { label: "Rim", voice: "rim", original: four(5, 13) },
@@ -20,11 +20,11 @@ export const KITS: Kit[] = [
       { label: "Bass", voice: "bass", choke: true, deg: [0, 0, 0, 0, 0, 0, 3, 3, 2, 2, 2, 2, 1, 1, 0, 0], original: [[1, 7], [1, 9], [1, 7, 13], [1, 9, 15]] },
       { label: "Pluck", voice: "pluck", deg: [4, 2, 3, 1, 4, 2, 3, 0, 4, 2, 3, 1, 5, 4, 3, 2], original: [[3, 6], [11], [3, 6, 14], []] },
       { label: "Pad", voice: "pad", choke: true, deg: Array(16).fill(0), original: [[1], [], [1], []] },
-      { label: "Undertow", voice: "riser", choke: true, original: [[], [], [], [13]] },
+      { label: "ACENSION", voice: "riser", choke: true, original: [[], [], [], [13]] },
     ],
   },
   {
-    slug: "salt-choir", title: "Salt Choir", bpm: 72, root: 50, scale: [0, 2, 3, 7, 9], gain: 0.85,
+    slug: "salt-choir", title: "Circles", bpm: 72, root: 50, scale: [0, 2, 3, 7, 9], gain: 0.85,
     rows: [
       { label: "Kick", voice: "kick", original: four(1, 11) },
       { label: "Snap", voice: "clap", original: four(9) },
@@ -35,7 +35,7 @@ export const KITS: Kit[] = [
     ],
   },
   {
-    slug: "low-water", title: "Low Water", bpm: 100, root: 41, scale: [0, 3, 7, 8, 10], gain: 0.8,
+    slug: "low-water", title: "Twinflame", bpm: 100, root: 41, scale: [0, 3, 7, 8, 10], gain: 0.8,
     rows: [
       { label: "Kick", voice: "kick", original: four(1, 5, 9, 13) },
       { label: "Clap", voice: "clap", original: four(5, 13) },
@@ -43,19 +43,19 @@ export const KITS: Kit[] = [
       { label: "Open Hat", voice: "openhat", original: [[], [15], [], [7, 15]] },
       { label: "Bass", voice: "bass", choke: true, deg: [0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 4, 4, 2, 2], original: four(3, 7, 11, 15) },
       { label: "Stab", voice: "lead", choke: true, deg: [2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 1, 1, 1, 1], original: [[15], [7], [15], [7]] },
-      { label: "Low Water", voice: "riser", choke: true, original: [[], [], [], [9]] },
+      { label: "Twinflame", voice: "riser", choke: true, original: [[], [], [], [9]] },
     ],
   },
   {
-    slug: "riptide-hymn", title: "Riptide Hymn", bpm: 120, root: 48, scale: [0, 2, 4, 7, 9], gain: 0.75,
+    slug: "riptide-hymn", title: "Forest Walk", bpm: 120, root: 48, scale: [0, 2, 4, 7, 9], gain: 0.75,
     rows: [
       { label: "Kick", voice: "kick", original: four(1, 5, 9, 13) },
       { label: "Clap", voice: "clap", original: four(5, 13) },
       { label: "Hat", voice: "hat", original: four(3, 7, 11, 15) },
       { label: "Bass", voice: "bass", choke: true, deg: [0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 2, 2, 2, 2], original: four(3, 7, 11, 15) },
       { label: "Lead", voice: "lead", choke: true, deg: [4, 4, 3, 3, 2, 2, 4, 4, 5, 5, 4, 4, 3, 3, 2, 2], original: [[1, 5, 9, 13], [1, 5, 9, 13], [1, 5, 9, 13, 15], [1, 5, 9]] },
-      { label: "Hymn Pad", voice: "pad", choke: true, deg: Array(16).fill(0), original: [[15], [], [], []] },
-      { label: "Riptide", voice: "riser", choke: true, original: [[], [], [], [15]] },
+      { label: "Deep Pad", voice: "pad", choke: true, deg: Array(16).fill(0), original: [[15], [], [], []] },
+      { label: "Forest Walk", voice: "riser", choke: true, original: [[], [], [], [15]] },
     ],
   },
 ];

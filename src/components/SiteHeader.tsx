@@ -20,9 +20,9 @@ export function SiteHeader({ active }: { active?: "listen" | "sequencer" | "abou
       <Link href="/sequencer" aria-current={cur("sequencer")} className="link hidden whitespace-nowrap s:col-start-4 s:row-start-1 s:block" style={{ marginLeft: U(30) }}><Slide d={2}><span className="relative">{dot("sequencer")}Sequencer</span></Slide></Link>
       <Link href="/#about" aria-current={cur("about")} className="link hidden s:col-start-6 s:row-start-1 s:block"><Slide d={3}><span className="relative">{dot("about")}About</span></Slide></Link>
       <div className="mt-var col-span-4 row-start-2 s:col-span-4 s:col-start-8 s:row-start-1" style={{ "--mt": U(16), "--mt-s": U(7) } as CSSProperties}>
-        <Lines as="p" className="t-title lead-in" text="“Undertow” Debut EP" />
-        <Lines as="p" className="t-title indent-half s:whitespace-nowrap" style={{ marginTop: U(3) }} text="Side A: Undertow, Salt Choir" />
-        <Lines as="p" className="t-title indent-half s:whitespace-nowrap" text="Side B: Low Water, Riptide Hymn" />
+        <Lines as="p" className="t-title lead-in" text="“ASCEND” Debut EP" />
+        <Lines as="p" className="t-title indent-half s:whitespace-nowrap" style={{ marginTop: U(3) }} text="Side A: ACENSION, Circles" />
+        <Lines as="p" className="t-title indent-half s:whitespace-nowrap" text="Side B: Twinflame, Forest Walk" />
         <Lines as="p" className="t-title indent-full" text="21.11.2026 00:00" />
         <Lines as="p" className="t-title indent-full" text="Streams live" />
         <Lines as="p" className="t-title indent-full" text="©2026" />

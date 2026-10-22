@@ -2,6 +2,7 @@
 // Sequencer screen, laid out to the reference's measured page (1440 px: tracks panel 216u wide, controls 4 x 3 cells
 // of 45u, a 16-step grid with 7u column gaps, 3u radii, a full-width share bar), with our own kits and sounds.
 import { useEffect, useSyncExternalStore, type CSSProperties } from "react";
+import { pause as pauseReal, playTrack, TRACKS } from "@/lib/audio";
 import {
   KITS, clearAll, copyPattern, hydrate, markCopied, pastePattern, play, preview, resetLoop, selectKit, selectPattern,
   seq, shareUrl, stop, toggleFollow, toggleStep,
@@ -69,6 +70,11 @@ export function Sequencer() {
             </button>
           ))}
         </div>
+        {/* rx: the real streamed track behind this kit, played through the site's YouTube player */}
+        <button onClick={() => { stop(); pauseReal(); playTrack(s.kit); }}
+          className={`${panel} hoverable col-span-4 flex items-center justify-center`} style={{ ...radius, height: U(45) }}>
+          ▶ {TRACKS[s.kit].side} · Listen to the real track (YouTube ↗)
+        </button>
       </div>
 
       <div className="seq-scroll min-h-0 flex-1" style={{ marginTop: U(40.5) }}>

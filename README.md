@@ -46,6 +46,9 @@ Black, silver, a moon on the water, and four tracks your browser writes live.
     <td><sub><b>03 · Film</b>: a lazy video panel. A cursor chip follows the pointer, and clicking toggles the sound.</sub></td>
     <td><sub><b>04 · Player</b>: tracks, a spinning silver disc, live spectrum bars and transport.</sub></td>
   </tr>
+  <tr>
+    <td><img src="docs/screens/12-sequencer.webp" alt="Sequencer page: a kit per side of the record on a 16-step grid, with a link to the real streamed track" width="100%" /></td>
+  </tr>
 </table>
 
 <p align="center">
@@ -60,27 +63,28 @@ Black, silver, a moon on the water, and four tracks your browser writes live.
 
 ## ◐ The idea
 
-A release site for an EP that doesn't exist, by an artist who doesn't exist. Nothing is streamed, there are no audio files, and every note is synthesised in the browser the moment you press play.
+A release site for an EP that doesn't exist, by an artist who doesn't exist. The four tracks stream live from YouTube through the site's own player, and a step-sequencer page lets you rebuild them step by step with sounds written in the browser.
 
 The site is the record:
 
 1. **You hold the sleeve.** The silver CD slides out as you reach for it.
-2. **You enter.** You land on the surface of a night sea.
-3. **You scroll.** The camera sinks under the water, and the sleeve notes surface line by line.
+2. **You enter.** The artwork pops, and the chrome wordmarks float over it.
+3. **You scroll.** The artwork dissolves into the sea, the camera sinks under the water, and the sleeve notes surface line by line.
 
 ## ◑ How a visit flows
 
 ```mermaid
 flowchart LR
-  A[Gate · record sleeve] -- click --> B[WebAudio engine starts]
+  A[Gate · record sleeve] -- click --> B[YouTube IFrame player starts]
   B --> C[(signal singleton<br/>level · bass · progress)]
   D[Lenis smooth scroll] --> C
   E[Pointer] --> C
-  C --> F[R3F scene<br/>wordmark · glints · moon road]
+  C --> F[R3F scene<br/>artwork · wordmark · glints · moon road]
   C --> G[Player panel<br/>disc · spectrum bars]
   C --> H[Video chip<br/>sound on / off]
   D --> I[Line reveal<br/>position check]
   D --> J[--scene dim<br/>behind reading sections]
+  B --> K[(Sequencer page<br/>step kits per track)]
 ```
 
 Everything that moves every frame reads one plain object (`src/lib/signal.ts`). React state is only for things a person can see change, such as which track is playing.
@@ -89,12 +93,13 @@ Everything that moves every frame reads one plain object (`src/lib/signal.ts`). 
 
 | Piece | File | How it's made |
 |---|---|---|
-| **Gate: sleeve and CD** | `components/ui.tsx` · `Cover.tsx` | The cover is our Blender still plus an SVG wordmark on a `textPath` arc, filled with a chrome gradient and a soft `feGaussianBlur` glow. Four-point glints twinkle in CSS. The CD sits behind the sleeve at 16%, slides to 30% on hover and 62% on click (1 s, `cubic-bezier(.2,.7,.2,1)`), spins faster, and then the curtain fades over 700 ms. Page scroll is locked until you enter. |
-| **Arched chrome wordmark** | `components/Scene.tsx` | `TextGeometry` is bent on the CPU with `x' = (R+y)·sinθ`, `y' = (R+y)·cosθ − R`, where `θ = x/R`. Physical material: metalness 1, roughness .12, clearcoat. It's lit by a `<Lightformer>` environment, with no HDR download. |
-| **Moon and its light path** | `Scene.tsx` | An unlit disc on the horizon, plus a flat additive plane carrying a baked falloff of broken horizontal glitter. A seeded PRNG keeps the pattern identical on every visit, and the path pulses with the music. |
+| **Gate: sleeve and CD** | `components/ui.tsx` · `Cover.tsx` | The cover is the ASCEND artwork, rendered full-bleed — the chrome word, "PRESENTING PEGASSI" caption and star glints are baked into the picture. The CD sits behind the sleeve at 16%, slides to 30% on hover and 62% on click (1 s, `cubic-bezier(.2,.7,.2,1)`), spins faster, and then the curtain fades over 700 ms. Page scroll is locked until you enter. |
+| **Hero artwork + 3D wordmark** | `components/Scene.tsx` · `HeroWord.tsx` | The cover lives inside the scene behind the word: it pops on entry (a slight over-settle over ~0.9 s), parallax-drifts with the pointer, and dissolves as you scroll so the sea, moon and sparkles surface beneath the chrome word. `TextGeometry` is bent on the CPU with `x' = (R+y)·sinθ`, `y' = (R+y)·cosθ − R`, `θ = x/R`; physical material metalness 1, roughness .12, clearcoat, lit by a `<Lightformer>` environment with no HDR download. |
+| **Moon and its light path** | `Scene.tsx` | An unlit disc on the horizon plus a flat additive plane carrying a baked falloff of broken horizontal glitter. Both stay hidden while the artwork is up, and a seeded PRNG keeps the glitter identical on every visit. |
 | **The descent** | `Scene.tsx` · `ui.tsx` | Scroll progress over 1.6 viewports drives the camera from above the water to below it. The background and fog cross-fade, and the surface underside is drawn only once you're submerged. After that the canvas dims to 14% so the reading sections stay crisp. |
-| **Generative EP** | `lib/audio.ts` | A WebAudio lookahead scheduler (25 ms tick, 120 ms horizon) runs 16th-note steps: kick, noise hats, a bass on scale degrees, detuned saw pads and random plucks. Each track has its own BPM, root, scale and waveform. An analyser feeds `level` and `bass`. |
-| **Player panel** | `ui.tsx` | A tracks grid, plus a silver disc whose sheen stays still (like light on a real CD) while the label spins. The spectrum is drawn to a canvas with low bins spread on a curve, alongside elapsed time, BPM and transport. Esc closes it and returns focus. |
+| **Streaming player** | `lib/audio.ts` · `ui.tsx` | Four tracks stream via YouTube's IFrame Player API in a single hidden 1px embed; picking a side loads its video by id. The spectrum the visuals read is drawn locally, so the scene pulse and the player's canvas bars keep dancing while an embed's audio can't be analysed. |
+| **Player panel** | `ui.tsx` | A tracks grid, plus a silver disc whose sheen stays still (like light on a real CD) while the label spins. Elapsed time, track name and transport; Esc closes it and returns focus. |
+| **Sequencer** | `components/Sequencer.tsx` · `lib/sequencer.ts` | A step-sequencer page (the nav's second item): one synth kit per side of the record, four patterns each, 16 steps, share links — every sound written in the browser. Each kit also routes to the real streamed track. |
 | **Line reveal** | `components/Lines.tsx` | Words are measured into lines after fonts load. Each line sits in a clip mask and rises from 105% over 1.75 s with expo-out, 0.1 s apart. It triggers by position check, so anchor jumps still reveal. It re-splits on resize. Without JS or with reduced motion the text is plain. |
 | **Video panels** | `components/MediaPanel.tsx` | A still sits under a muted loop. The `src` is set only when the panel is near the viewport, it plays only while visible, and the still fades on the first painted frame (`requestVideoFrameCallback`). A blend-mode chip trails the cursor with a lagged tilt. |
 | **Sleeve-note layout** | `app/page.tsx` | Full-width display paragraphs with the first line indented 5 columns (4 on mobile), and the marker sitting in the indent on a shared grid row. |
@@ -145,7 +150,7 @@ npm run build && npm start
 src/
   app/            layout, page (section order), globals.css (tokens, disc, gate, line reveal)
   components/     Scene · Cover · Lines · MediaPanel · ui (gate, player, tracklist, smooth scroll)
-  lib/            audio.ts (generative engine) · signal.ts (per-frame values)
+  lib/            audio.ts (streamed playback) · sequencer.ts (step kits) · signal.ts (per-frame values)
 art/              moon_sea.py (Blender footage)
 public/media/     rendered loops and stills
 public/fonts/     wordmark typeface + licence
@@ -153,8 +158,14 @@ public/fonts/     wordmark typeface + licence
 
 ---
 
+## License
+
+**© 2026 Ravjot Singh. All rights reserved.** This project is not open source — see [LICENSE.md](LICENSE.md) for the terms: no copying, modification, redistribution, or commercial use without written permission from the owner. Third-party songs stream via official YouTube embeds and remain the property of their rights holders.
+
+---
+
 <sub>
 
-**Originality.** The interaction patterns of this *kind* of site were studied from [ascension.pegassi.be](https://ascension.pegassi.be): a gate cover, line reveals, video panels and a player. We studied them as behaviour only; no code, music, imagery, copy or identity was reused. Tidewell, Undertow, its dates and its venues are fictional, and every asset here was made for this project. The wordmark uses the MgOpen Moderna-derived typeface; its licence is in `public/fonts/`.
+**Originality.** The interaction patterns of this *kind* of site were studied from [ascension.pegassi.be](https://ascension.pegassi.be): a gate cover, line reveals, video panels and a player. We studied them as behaviour only; no code, music, imagery, copy or identity was reused. Tidewell, its dates and its venues are fictional, and every asset here was made for this project. The wordmark uses the MgOpen Moderna-derived typeface; its licence is in `public/fonts/`.
 
 </sub>
