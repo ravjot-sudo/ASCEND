@@ -13,19 +13,17 @@ export function MediaPanel({ still, video, label, className = "", style }: { sti
   useEffect(() => {
     const v = clip.current!, b = box.current!;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let visible = false;
-    const fade = () => setShown(true);
-    const play = () => {
-      if (!visible || !v.src) return;
-      v.play().catch(() => {});
-      if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(fade);
-      else v.addEventListener("playing", fade, { once: true });
-    };
+    // Attach + fetch only when the panel is actually on screen (heavy files stream, they don't
+    // pre-download from 3/4 of a viewport away and eat the connection).
+    let first = true;
     const near = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) return;
-      v.src = video; v.load(); play(); near.disconnect();
-    }, { rootMargin: "75% 0px" });
-    const vis = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) play(); else v.pause(); });
+      if (!e.isIntersecting || !first) return;
+      first = false;
+      v.src = video; v.load(); v.play().catch(() => {});
+      if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => setShown(true));
+      else v.addEventListener("playing", () => setShown(true), { once: true });
+    });
+    const vis = new IntersectionObserver(([e]) => { if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); });
     near.observe(b); vis.observe(b);
     return () => { near.disconnect(); vis.disconnect(); };
   }, [video]);
