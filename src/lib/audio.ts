@@ -1,12 +1,15 @@
-// Generative WebAudio EP: every note is synthesised live, nothing is downloaded (P29).
+// Background music streams four tracks from YouTube via the IFrame Player API; each side is its own
+// video (played in a single hidden 1px embed, looped on end). Embed audio can't be tapped by
+// WebAudio, so the spectrum the visuals read is drawn locally; it follows the play state rather
+// than the real waveform (P29).
 import { signal } from "./signal";
 
-export type Track = { title: string; side: string; bpm: number; root: number; key: string; scale: number[]; wave: OscillatorType };
+export type Track = { title: string; side: string; id: string };
 export const TRACKS: Track[] = [
-  { title: "Undertow", side: "I", bpm: 84, root: 45, key: "A minor", scale: [0, 3, 5, 7, 10], wave: "sawtooth" },
-  { title: "Salt Choir", side: "II", bpm: 72, root: 50, key: "D dorian", scale: [0, 2, 3, 7, 9], wave: "triangle" },
-  { title: "Low Water", side: "III", bpm: 100, root: 41, key: "F minor", scale: [0, 3, 7, 8, 10], wave: "square" },
-  { title: "Riptide Hymn", side: "IV", bpm: 120, root: 48, key: "C major", scale: [0, 2, 4, 7, 9], wave: "sawtooth" },
+  { title: "ACENSION", side: "I", id: "MH_Pq3Vcdy4" },
+  { title: "Circles", side: "II", id: "m__KXFoKkFk" },
+  { title: "Twinflame", side: "III", id: "BBWytCRHYv0" },
+  { title: "Forest Walk", side: "IV", id: "b2PKXIU3QpQ" },
 ];
 
 type State = { playing: boolean; index: number };
@@ -15,83 +18,120 @@ const subs = new Set<() => void>();
 const set = (s: Partial<State>) => { state = { ...state, ...s }; subs.forEach((f) => f()); };
 export const audioStore = { get: () => state, subscribe: (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; } };
 
-let ctx: AudioContext | null = null, master: GainNode, noise: AudioBuffer;
-let timer = 0, next = 0, step = 0, pausedAt = 0;
-let startedAt: number | null = null; // AudioContext time the current track began (null = not started; 0 is a valid time)
-let analyser: AnalyserNode | null = null;
-const hz = (m: number) => 440 * 2 ** ((m - 69) / 12);
+interface YTPlayer {
+  loadVideoById(id: string): void;
+  playVideo(): void;
+  pauseVideo(): void;
+  getCurrentTime(): number;
+  setVolume(volume: number): void;
+}
+interface YTNamespace {
+  Player: new (element: HTMLElement | string, options: {
+    videoId: string;
+    playerVars?: Record<string, string | number>;
+    events?: {
+      onReady?: () => void;
+      onStateChange?: (event: { data: number }) => void;
+    };
+  }) => YTPlayer;
+}
+declare global { interface Window { YT?: YTNamespace; onYouTubeIframeAPIReady?: () => void; } }
 
-function init() {
-  const c = (ctx = new AudioContext());
-  master = c.createGain(); master.gain.value = 0;
-  const an = (analyser = c.createAnalyser()); an.fftSize = 256; an.smoothingTimeConstant = 0.8;
-  master.connect(c.createDynamicsCompressor()).connect(an).connect(c.destination);
-  noise = c.createBuffer(1, c.sampleRate, c.sampleRate);
-  const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  const bins = new Uint8Array(an.frequencyBinCount);
-  const loop = () => {
-    an.getByteFrequencyData(bins);
-    let s = 0, b = 0; for (let i = 0; i < bins.length; i++) { s += bins[i]; if (i < 6) b += bins[i]; }
-    signal.level += (Math.min(1, s / bins.length / 110) - signal.level) * 0.15;
-    signal.bass += (b / 6 / 255 - signal.bass) * 0.25;
-    requestAnimationFrame(loop);
-  };
-  loop();
-}
+let player: YTPlayer | null = null, ready = false, pending = false, pendingId = TRACKS[0].id, apiPromise: Promise<void> | null = null;
+let frozenAt = 0; // seconds into the current track (frozen while paused)
+let raf = 0, lastT = 0;
+const bins = new Uint8Array(128); // local stand-in spectrum, kept in 0–255 like the old analyser
+const targets = new Float32Array(bins.length);
 
-function env(g: GainNode, t: number, a: number, peak: number, r: number) {
-  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + r);
-}
-function voice(type: OscillatorType, f: number, t: number, dur: number, peak: number, cutoff = 2400, detune = 0, attack = 0.01) {
-  const c = ctx!, o = c.createOscillator(), g = c.createGain(), lp = c.createBiquadFilter();
-  o.type = type; o.frequency.value = f; o.detune.value = detune; lp.frequency.value = cutoff;
-  env(g, t, attack, peak, dur); o.connect(lp).connect(g).connect(master); o.start(t); o.stop(t + attack + dur + 0.05);
-}
-function kick(t: number) {
-  const c = ctx!, o = c.createOscillator(), g = c.createGain();
-  o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
-  env(g, t, 0.004, 0.9, 0.35); o.connect(g).connect(master); o.start(t); o.stop(t + 0.4);
-}
-function hat(t: number, peak = 0.1) {
-  const c = ctx!, s = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain();
-  s.buffer = noise; hp.type = "highpass"; hp.frequency.value = 7000;
-  env(g, t, 0.002, peak, 0.05); s.connect(hp).connect(g).connect(master); s.start(t, Math.random() * 0.5); s.stop(t + 0.08);
+function loadAPI(): Promise<void> {
+  if (apiPromise) return apiPromise;
+  if (window.YT?.Player) return (apiPromise = Promise.resolve());
+  return (apiPromise = new Promise<void>((resolve) => {
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { prev?.(); resolve(); };
+    const s = document.createElement("script");
+    s.src = "https://www.youtube.com/iframe_api";
+    document.head.append(s);
+  }));
 }
 
-function play(s: number, t: number) {
-  const tr = TRACKS[state.index], sc = tr.scale, beat = 60 / tr.bpm;
-  const n = (k: number) => tr.root + sc[((k % sc.length) + sc.length) % sc.length] + 12 * Math.floor(k / sc.length);
-  const deg = [0, 0, 3, 2][(s >> 5) % 4];
-  if (s % 4 === 0 && (tr.bpm > 80 || s % 8 === 0)) kick(t);
-  if (s % 4 === 2) hat(t);
-  if (tr.bpm >= 100 && s % 2 === 1) hat(t, 0.04);
-  if (s % 8 === 0) voice(tr.wave, hz(n(deg + [0, 0, 1, -1][(s >> 3) % 4]) - 12), t, beat * 1.6, 0.22, 420);
-  if (s % 32 === 0) for (const k of [0, 2, 4]) for (const d of [-8, 8]) voice("sawtooth", hz(n(deg + k) + 12), t, beat * 8, 0.03, 1100, d, beat * 2);
-  if (Math.random() < 0.28) voice("triangle", hz(n(deg + Math.floor(Math.random() * 8)) + 12), t, beat * 0.6, 0.07, 3200);
+// Track ends → play again from the top (single embed loops its current video).
+function mount() {
+  if (player) return;
+  const host = document.createElement("div");
+  host.setAttribute("aria-hidden", "true");
+  host.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;overflow:hidden";
+  document.body.append(host);
+  player = new window.YT!.Player(host, {
+    videoId: TRACKS[0].id,
+    playerVars: { playsinline: 1 },
+    events: {
+      onReady: () => {
+        ready = true;
+        player!.setVolume(55);
+        if (pending) { pending = false; player!.loadVideoById(pendingId); }
+      },
+      onStateChange: ({ data }) => {
+        if (data === 1) set({ playing: true });
+        else if (data === 2) { frozenAt = player!.getCurrentTime(); set({ playing: false }); }
+        else if (data === 0) player!.playVideo(); // ended → loop the current track
+      },
+    },
+  });
 }
-function tick() {
-  const dt = 60 / TRACKS[state.index].bpm / 4;
-  while (next < ctx!.currentTime + 0.12) { play(step, next); next += dt; step++; }
+
+function ensureViz() {
+  if (raf) return;
+  for (let i = 0; i < bins.length; i++) targets[i] = Math.random() ** 1.6;
+  raf = requestAnimationFrame((t) => { lastT = t; loop(t); });
+}
+function loop(t: number) {
+  raf = requestAnimationFrame(loop);
+  const dt = Math.min(0.05, lastT ? (t - lastT) / 1000 : 0.016); lastT = t;
+  const live = state.playing ? 1 : 0;
+  for (let i = 0; i < bins.length; i++) {
+    if (Math.random() < (i < 8 ? 0.18 : 0.05)) targets[i] = i < 8 ? Math.random() : Math.random() ** 1.6;
+    const target = live * targets[i] * (i < 8 ? 1 : 0.9 - (i / bins.length) * 0.55);
+    const cur = bins[i] / 255;
+    bins[i] = Math.round(255 * (cur + (target - cur) * Math.min(1, dt * (target > cur ? 14 : 7))));
+  }
+  let s = 0, b = 0; for (let i = 0; i < bins.length; i++) { s += bins[i]; if (i < 6) b += bins[i]; }
+  signal.level += (Math.min(1, (s / bins.length) / 110) - signal.level) * 0.15;
+  signal.bass += (b / 6 / 255 - signal.bass) * 0.25;
 }
 
 export async function playTrack(i = state.index) {
-  if (!ctx) init();
-  await ctx!.resume();
-  const now = ctx!.currentTime;
-  if (i !== state.index || startedAt === null) startedAt = now; else if (!state.playing) startedAt += now - pausedAt;
-  if (i !== state.index || !timer) { step = 0; next = now + 0.06; }
+  const fresh = i !== state.index;
+  if (fresh) frozenAt = 0;
   set({ index: i, playing: true });
-  master.gain.setTargetAtTime(0.5, ctx!.currentTime, 0.3);
-  if (!timer) timer = window.setInterval(tick, 25);
+  ensureViz();
+  if (ready && player) {
+    if (fresh) player.loadVideoById(TRACKS[i].id);
+    else player.playVideo();
+  } else {
+    pending = true;
+    pendingId = TRACKS[i].id;
+    await loadAPI();
+    mount();
+  }
 }
 export function pause() {
-  if (!ctx) return;
-  pausedAt = ctx.currentTime; master.gain.setTargetAtTime(0, ctx.currentTime, 0.12); clearInterval(timer); timer = 0; set({ playing: false });
+  pending = false;
+  if (ready && player) { frozenAt = player.getCurrentTime(); player.pauseVideo(); }
+  set({ playing: false });
 }
 export const toggle = () => (state.playing ? pause() : playTrack());
 export const nextTrack = () => playTrack((state.index + 1) % TRACKS.length);
 export const prevTrack = () => playTrack((state.index + TRACKS.length - 1) % TRACKS.length);
 /** Seconds into the current track (frozen while paused). */
-export const elapsed = () => (ctx && startedAt !== null ? (state.playing ? ctx.currentTime : pausedAt) - startedAt : 0);
-/** Copies the live spectrum (0–255 per bin) into `out`; returns false before the engine starts. */
-export const readWave = (out: Uint8Array<ArrayBuffer>) => { if (!analyser) return false; analyser.getByteFrequencyData(out); return true; };
+export const elapsed = () => {
+  if (!state.playing || !ready || !player) return frozenAt;
+  frozenAt = player.getCurrentTime();
+  return frozenAt;
+};
+/** Fills `out` with the live spectrum (0–255 per bin); returns false before the engine starts. */
+export const readWave = (out: Uint8Array<ArrayBuffer>) => {
+  if (!raf) return false;
+  out.set(bins.subarray(0, Math.min(out.length, bins.length)));
+  return true;
+};

@@ -1,10 +1,10 @@
 "use client";
 // P32: lazy video panel. Still under a muted loop; src set only when near, plays only while visible.
 // A cursor chip trails the pointer and the click toggles the EP's live sound.
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { audioStore, toggle } from "@/lib/audio";
 
-export function MediaPanel({ still, video, label, className = "" }: { still: string; video: string; label: string; className?: string }) {
+export function MediaPanel({ still, video, label, className = "", style }: { still: string; video: string; label: string; className?: string; style?: CSSProperties }) {
   const box = useRef<HTMLButtonElement>(null), clip = useRef<HTMLVideoElement>(null), chip = useRef<HTMLSpanElement>(null);
   const [shown, setShown] = useState(false);
   const s = useSyncExternalStore(audioStore.subscribe, audioStore.get, audioStore.get);
@@ -39,7 +39,7 @@ export function MediaPanel({ still, video, label, className = "" }: { still: str
       const k = still ? 1 : 0.18, px = x;
       x += (tx - x) * k; y += (ty - y) * k;
       r = Math.max(-12, Math.min(12, (x - px) * 0.4));
-      c.style.transform = `translate3d(${x + 14}px, ${y + 14}px, 0) rotate(${still ? 0 : r}deg)`;
+      c.style.transform = `translate3d(calc(${x}px + var(--u) * 10), calc(${y}px + var(--u) * 10), 0) rotate(${still ? 0 : r}deg)`;
       if (inside || Math.abs(tx - x) > 0.5) raf = requestAnimationFrame(tick); else raf = 0;
     };
     const move = (e: PointerEvent) => {
@@ -53,12 +53,12 @@ export function MediaPanel({ still, video, label, className = "" }: { still: str
   }, []);
 
   return (
-    <button ref={box} onClick={toggle} aria-pressed={s.playing} aria-label={`${label}. ${text}`} className={`group relative block cursor-pointer overflow-hidden rounded-[5px] bg-[#0b0b0b] text-left ${className}`}>
+    <button ref={box} onClick={toggle} aria-pressed={s.playing} aria-label={`${label}. ${text}`} style={{ borderRadius: "calc(var(--u) * 5)", ...style }} className={`group relative block cursor-pointer overflow-hidden bg-[#0b0b0b] text-left ${className}`}>
       <video ref={clip} muted loop playsInline preload="none" aria-hidden className="absolute inset-0 size-full object-cover" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={still} alt="" loading="lazy" className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ${shown ? "opacity-0" : "opacity-100"}`} />
-      <span ref={chip} aria-hidden className="micro pointer-events-none absolute top-0 left-0 z-10 text-white opacity-0 mix-blend-difference transition-opacity duration-300 [@media(hover:none)]:hidden">{text}</span>
-      <span aria-hidden className="micro absolute bottom-3 left-3 z-10 text-white/70 [@media(hover:hover)]:hidden">{text}</span>
+      <span ref={chip} aria-hidden className="t-body pointer-events-none absolute top-0 left-0 z-10 text-white opacity-0 mix-blend-difference transition-opacity duration-300 [@media(hover:none)]:hidden">{text}</span>
+      <span aria-hidden className="t-body absolute z-10 text-white/70 [@media(hover:hover)]:hidden" style={{ left: "calc(var(--u) * 10)", bottom: "calc(var(--u) * 5)" }}>{text}</span>
     </button>
   );
 }

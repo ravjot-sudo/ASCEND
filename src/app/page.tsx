@@ -1,37 +1,43 @@
+import type { CSSProperties, ReactNode } from "react";
 import Scene from "@/components/Scene";
 import { Lines } from "@/components/Lines";
 import { MediaPanel } from "@/components/MediaPanel";
-import { Gate, Player, SmoothScroll, Tracklist } from "@/components/ui";
+import { CuePreview, CueSection } from "@/components/Cue";
+import { Gate, Player, SmoothScroll } from "@/components/ui";
 
-const INTRO = "Undertow is four pieces about the pull you don't notice until you're already in it. No samples, no stems, no files: every note you hear is written by your browser, live, the moment you press play.";
-const SIDE_A = [
-  { mark: "I", text: "The title track starts slow and heavy, a bass line that keeps stepping back down the same five notes like a tide that won't commit." },
-  { mark: "II", text: "Salt Choir is the softest thing here: voices stacked in fifths, sung by nobody, slightly out of tune on purpose." },
-];
-const SIDE_B = [
-  { mark: "III", text: "Low Water is the one with teeth, square waves and a kick that sits right under the sternum." },
-  { mark: "IV", text: "Riptide Hymn closes at a hundred and twenty: bright, major, and quicker than it should be. That's how riptides work." },
-];
+// u = the reference's 0.1rem (viewport-scaled, see globals.css). Spacing below is the measured reference rhythm.
+const U = (n: number) => `calc(var(--u) * ${n})`;
+const mt = (m: number, s?: number) => ({ "--mt": U(m), ...(s === undefined ? {} : { "--mt-s": U(s) }) }) as CSSProperties;
+// A label that slides up out of its mask after the gate (1.25 s expo-out, staggered by `d`).
+const Slide = ({ d = 0, children }: { d?: number; children: ReactNode }) => (
+  <span className="slide-mask"><span className="slide-up" style={{ "--d": `${0.1 * d}s` } as CSSProperties}>{children}</span></span>
+);
+
+const INTRO = "Undertow is four pieces about the pull you don't notice until you're already in it. No samples, no stems, no files: every note you hear is written live, the moment you press play.";
 const BIO = "Tidewell is a made-up artist from a made-up coast, a name for whatever the code decides to play tonight. The sound is cold and patient: long pads, a kick you feel more than hear, and melodies that never land in the same place twice.";
-const FACTS = [
-  { n: "1", title: "How the first loop started", text: "A single sine wave left running overnight, slowly detuned against itself. By morning it sounded like weather, and the rest of the record was built around that drift." },
-  { n: "2", title: "Where the tide goes next", text: "Four rooms by the sea, each playing the same patches through different speakers, each night generated fresh. Nothing is recorded, so nothing repeats." },
+const META = [
+  { n: "1", text: "The first loop ran overnight, a sine wave slowly drifting against itself.", link: { label: "Listen ↗", href: "#tracks" } },
+  { n: "2", text: "Four rooms by the sea, each night generated fresh. Nothing repeats.", link: { label: "Notes ↗", href: "#notes" } },
 ];
-const DATES = [
-  { d: "21.11.2026", place: "Everywhere", venue: "Release day, all platforms", s: "Out" },
-  { d: "05.12.2026", place: "Ostend", venue: "Pier Hall", s: "Concept" },
-  { d: "12.12.2026", place: "Rotterdam", venue: "Maassilo, Room 2", s: "Concept" },
-  { d: "19.12.2026", place: "Lisbon", venue: "Armazém 16", s: "Concept" },
-  { d: "09.01.2027", place: "Reykjavík", venue: "Harbour Shed", s: "Concept" },
+const FACTS = [
+  { k: "A:", title: "How the first loop started.", text: "A single sine wave left running overnight, slowly detuned against itself. By morning it sounded like weather, and the rest of the record was built around that drift." },
+  { k: "B:", title: "Where the tide goes next.", text: "Four rooms by the sea, each playing the same patches through different speakers, each night generated fresh. Nothing is recorded, so nothing repeats." },
+];
+const TITLES = [
+  { cue: "I", title: "Undertow", meta: "84 BPM", order: "order-1" },
+  { cue: "III", title: "Low Water", meta: "100 BPM", order: "order-3" },
+  { cue: "II", title: "Salt Choir", meta: "72 BPM", order: "order-2" },
+  { cue: "IV", title: "Riptide Hymn", meta: "120 BPM", order: "order-4" },
 ];
 
-// Sleeve note: full-width paragraph, first line indented by whole columns, marker sitting in the indent.
-function Note({ mark, text, markAt = "inner" }: { mark: string; text: string; markAt?: "start" | "inner" }) {
+function Mark({ children, className = "", style }: { children: string; className?: string; style?: CSSProperties }) {
+  return <Lines as="p" text={children} className={`t-mark mt-var ${className}`} style={style} />;
+}
+function Title({ cue, title, meta, order }: (typeof TITLES)[number]) {
   return (
-    <div className="grid grid-cols-12 gap-x-5">
-      <span className={`micro col-span-4 col-start-1 row-start-1 pt-[0.85em] text-mute md:col-span-2 ${markAt === "inner" ? "md:col-start-4" : ""}`}>{mark}</span>
-      <Lines text={text} indent className="note col-span-12 col-start-1 row-start-1" />
-    </div>
+    <Lines as="span" className={`block ${order} s:order-none`}>
+      <span data-cue={cue}><sup className="ride">{cue}</sup>{" "}{title} ({meta})</span>
+    </Lines>
   );
 }
 
@@ -40,92 +46,107 @@ export default function Home() {
     <>
       <SmoothScroll />
       <Scene />
-      <div aria-hidden className="dots pointer-events-none fixed inset-0 -z-[5]" />
+      <div aria-hidden className="grain-layer pointer-events-none fixed inset-0 -z-[5]" />
       <Gate />
+      <CuePreview />
       <Player />
 
-      <header className="micro fixed inset-x-0 top-0 z-30 grid grid-cols-12 gap-x-5 px-4 pt-4 pb-10 sm:px-6 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-black/85 before:to-transparent">
-        <a href="#top" className="col-span-3 font-semibold transition-opacity hover:opacity-60 md:col-span-2">Tidewell°</a>
-        <nav aria-label="Sections" className="col-span-5 hidden gap-8 md:flex">
-          <a href="#tracks" className="transition-opacity hover:opacity-60">Listen</a>
-          <a href="#notes" className="transition-opacity hover:opacity-60">Notes</a>
-          <a href="#about" className="transition-opacity hover:opacity-60">About</a>
-          <a href="#dates" className="transition-opacity hover:opacity-60">Tide table</a>
-        </nav>
-        <a href="#tracks" className="col-span-2 col-start-11 text-right transition-opacity hover:opacity-60 md:col-span-1 md:col-start-12">Play ↓</a>
+      <header className="site t-body absolute inset-x-0 top-0 z-30 items-start text-mute" style={{ paddingTop: U(6) }}>
+        <a href="#top" className="link col-span-2 row-start-1 text-[var(--chalk)]" style={{ marginTop: U(1) }}><Slide>Tidewell°</Slide></a>
+        <a href="#tracks" className="link hidden s:col-start-3 s:row-start-1 s:block"><Slide d={1}>Listen</Slide></a>
+        <a href="#notes" className="link hidden s:col-start-4 s:row-start-1 s:block" style={{ marginLeft: U(30) }}><Slide d={2}>Notes</Slide></a>
+        <a href="#about" className="link hidden s:col-start-6 s:row-start-1 s:block"><Slide d={3}>About</Slide></a>
+        <div className="mt-var col-span-4 row-start-2 s:col-span-4 s:col-start-8 s:row-start-1" style={mt(16, 7)}>
+          <Lines as="p" className="t-title lead-in" text="“Undertow” Debut EP" />
+          <Lines as="p" className="t-title indent-half whitespace-nowrap" style={{ marginTop: U(3) }} text="Side A: Undertow, Salt Choir" />
+          <Lines as="p" className="t-title indent-half s:whitespace-nowrap" text="Side B: Low Water, Riptide Hymn" />
+          <Lines as="p" className="t-title indent-full" text="21.11.2026 00:00" />
+          <Lines as="p" className="t-title indent-full" text="Streams live" />
+          <Lines as="p" className="t-title indent-full" text="©2026" />
+        </div>
+        <a href="#tracks" className="link col-start-4 row-start-1 text-right s:col-start-12"><Slide d={4}>Play</Slide></a>
       </header>
 
       <main id="top">
-        <section className="relative h-[220vh]">
+        <section className="hero relative">
           <h1 className="sr-only">Tidewell, Undertow EP</h1>
-          <div className="micro pointer-events-none absolute inset-x-0 top-0 z-[35] h-svh">
-            <div className="grid grid-cols-12 gap-x-5 px-4 pt-4 sm:px-6">
-              <p className="col-span-7 col-start-4 leading-snug md:col-span-4 md:col-start-8">
-                “Undertow” debut EP<br /><span className="text-mute">Side A:</span> Undertow, Salt Choir<br /><span className="text-mute">Side B:</span> Low Water, Riptide Hymn<br />21.11.2026 · 00:00<br /><span className="hidden text-mute sm:inline">Generated live · ©2026</span>
-              </p>
+          <div className="t-body pointer-events-none absolute inset-x-0 top-0 h-svh text-mute">
+            <p className="absolute top-1/2 hidden -translate-y-1/2 s:block" style={{ left: U(10) }}><Slide d={5}>EP</Slide></p>
+            <p className="absolute top-1/2 hidden -translate-y-1/2 s:block" style={{ right: U(10) }}><Slide d={6}>01</Slide></p>
+            <p className="absolute hidden s:block" style={{ left: U(10), bottom: U(8) }}><Slide d={7}>Live stream · 4 tracks</Slide></p>
+          </div>
+        </section>
+
+        <CueSection className="site mt-var text-mute" style={mt(45, 7)}>
+          <div id="notes" className="contents">
+            <Mark className="col-span-2">● Undertow</Mark>
+            <Lines as="p" text={INTRO} className="t-display mt-var col-indent col-span-4 [--indent:1] s:col-span-12 s:[--indent:5]" style={mt(-27)} />
+            <Mark className="col-start-1 s:col-start-5" style={mt(10, 6)}>I</Mark>
+            <Lines as="p" text="The [[I|title track|1]] starts slow and heavy, a bass line that keeps stepping back down the same five notes like a tide that won't commit." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(10, 6)} />
+            <Mark className="col-start-1 s:col-start-5" style={mt(5, 18)}>II</Mark>
+            <Lines as="p" text="[[II|Salt Choir|2]] is the softest thing here: voices stacked in fifths, sung by nobody, slightly out of tune on purpose." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 18)} />
+          </div>
+          <div id="tracks" className="t-display mt-var col-start-2 col-end-[-1] flex flex-col leading-[calc(var(--u)*30)] s:col-start-1 s:block s:leading-[calc(var(--u)*45)]" style={mt(80, 120)}>
+            <div className="contents s:flex s:justify-center" style={{ columnGap: U(27) }}>
+              <Title {...TITLES[0]} /><Title {...TITLES[1]} />
             </div>
-            <span className="absolute top-1/2 left-4 sm:left-6">EP</span>
-            <span className="absolute top-1/2 right-4 sm:right-6">I–IV</span>
-            <span className="absolute bottom-6 left-6 hidden text-mute sm:block">WebAudio · 4 tracks</span>
-            <span className="absolute bottom-20 left-1/2 -translate-x-1/2 text-mute sm:bottom-6">Scroll to go under ↓</span>
+            <div className="mt-var contents s:flex s:justify-center" style={{ columnGap: U(15), ...mt(0, 10) }}>
+              <Title {...TITLES[2]} /><Title {...TITLES[3]} />
+            </div>
+          </div>
+          <Mark className="col-start-1 s:col-start-5" style={mt(70, 145)}>III</Mark>
+          <Lines as="p" text="[[III|Low Water|3]] is the one with teeth, square waves and a kick that sits right under the sternum." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-6 s:col-span-7" style={mt(70, 145)} />
+          <Mark className="col-start-1 s:col-start-5" style={mt(5, 9)}>IV</Mark>
+          <Lines as="p" text="[[IV|Riptide Hymn|4]] closes at a hundred and twenty: bright, major, and quicker than it should be. That's how riptides work." className="t-display mt-var col-start-2 col-end-[-1] s:col-start-7 s:col-span-6" style={mt(5, 9)} />
+        </CueSection>
+
+        <section aria-label="Film" className="site mt-var t-body text-mute" style={mt(110, 195)}>
+          <MediaPanel still="/media/moon-sea.webp" video="/media/moon-sea.mp4" label="Moonlight on open water, a rendered loop" className="col-span-4 aspect-[484/645] s:col-start-7" />
+          <div className="col-span-2 col-start-11 hidden s:block" style={{ lineHeight: U(20) }}>
+            <Lines as="span" className="block" text="● Undertow" />
+            <Lines as="span" className="block" text="Open water (rendered)" />
           </div>
         </section>
 
-        <section id="notes" aria-label="Sleeve notes" className="space-y-[9vh] px-4 pt-[14vh] sm:px-6">
-          <Note mark="● Undertow" text={INTRO} markAt="start" />
-          {SIDE_A.map((n) => <Note key={n.mark} {...n} />)}
+        <section id="about" aria-label="About Tidewell" className="site mt-var text-mute" style={mt(100, 205)}>
+          <Mark className="col-span-2">● Tidewell</Mark>
+          <Lines as="p" text={BIO} className="t-display mt-var col-indent col-span-4 [--indent:1] s:col-span-12 s:[--indent:6]" style={mt(-27)} />
         </section>
 
-        <section id="tracks" aria-label="Tracklist" className="px-4 py-[14vh] sm:px-6">
-          <Tracklist />
-        </section>
-
-        <section aria-label="Side B notes" className="space-y-[9vh] px-4 sm:px-6">
-          {SIDE_B.map((n) => <Note key={n.mark} {...n} />)}
-        </section>
-
-        <section aria-label="Film" className="grid grid-cols-12 gap-x-5 px-4 pt-[14vh] sm:px-6">
-          <MediaPanel still="/media/moon-sea.webp" video="/media/moon-sea.mp4" label="Moonlight on open water, a rendered loop" className="col-span-12 aspect-[3/4] sm:col-span-6 sm:col-start-4 md:col-span-4 md:col-start-7" />
-          <Lines as="p" text="● Undertow / Open water (rendered)" className="micro col-span-12 pt-3 leading-relaxed text-mute md:col-span-2 md:col-start-11 md:pt-0" />
-        </section>
-
-        <section id="about" aria-label="About Tidewell" className="px-4 pt-[18vh] sm:px-6">
-          <Note mark="● Tidewell" text={BIO} markAt="start" />
-          <div className="mt-[12vh] grid grid-cols-12 gap-x-5 gap-y-12">
-            <MediaPanel still="/media/moon-sea-close.webp" video="/media/moon-sea-close.mp4" label="Glitter on the water, a rendered loop" className="col-span-12 aspect-[487/754] sm:col-span-6 md:col-span-4" />
-            <ol className="col-span-12 space-y-12 md:col-span-5 md:col-start-8 md:mt-[30vh]">
-              {FACTS.map((f) => (
-                <li key={f.n} className="grid grid-cols-[2rem_1fr] gap-x-3">
-                  <span className="micro pt-1 text-mute">{f.n}.</span>
-                  <div>
-                    <Lines as="h3" text={f.title} className="text-xl font-bold tracking-tight md:text-2xl" />
-                    <Lines text={f.text} className="mt-3 leading-relaxed text-mute" delay={0.15} />
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        <section id="dates" aria-labelledby="dates-h" className="grid grid-cols-12 gap-x-5 px-4 py-[16vh] sm:px-6">
-          <h2 id="dates-h" className="micro col-span-12 pb-6 text-mute md:col-span-2 md:col-start-2"><Lines as="span" text="● Tide table" /></h2>
-          <ul className="col-span-12 md:col-span-9">
-            {DATES.map((x) => (
-              <li key={x.d} className="grid grid-cols-12 items-baseline gap-x-4 border-t border-line py-4 transition-colors hover:bg-white/[0.04]">
-                <span className="micro col-span-4 text-mute sm:col-span-2">{x.d}</span>
-                <span className="col-span-8 text-2xl font-bold tracking-tight sm:col-span-4 md:text-3xl">{x.place}</span>
-                <span className="col-span-8 col-start-5 text-mute sm:col-span-4 sm:col-start-auto">{x.venue}</span>
-                <span className="micro col-span-12 text-right text-mute sm:col-span-2">{x.s}</span>
-              </li>
+        <section aria-label="Tidewell notes" className="site mt-var text-mute" style={mt(125, 260)}>
+          <MediaPanel still="/media/moon-sea-close.webp" video="/media/moon-sea-close.mp4" label="Glitter on the water, a rendered loop" className="mt-var col-span-4 row-start-2 aspect-[487/754] s:row-start-1" style={mt(100, 0)} />
+          <div className="t-meta col-span-4 row-start-3 mt-10 hidden s:col-span-2 s:col-start-5 s:row-start-1 s:mt-0 s:block" style={{ lineHeight: U(16) }}>
+            {META.map((m, i) => (
+              <div key={m.n} className="relative" style={{ marginTop: i ? U(55) : 0 }}>
+                <p className="absolute top-0 left-0">{m.n}</p>
+                <div style={{ marginLeft: U(20), maxWidth: U(170) }}>
+                  <Lines as="p" text={m.text} />
+                  <p style={{ marginTop: U(15) }}><a href={m.link.href} className="link">{m.link.label}</a></p>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
+          <div className="site-4 t-copy col-span-4 row-start-1 s:col-start-9">
+            {FACTS.map((f) => (
+              <div key={f.k} className="contents">
+                <Lines as="p" className="col-start-1 col-end-2" text={f.k} />
+                <Lines as="p" className="col-start-2 col-end-[-1]" text={f.title} />
+                <Lines as="p" className="col-start-2 col-end-[-1] w-full" style={{ marginLeft: U(35), maxWidth: U(310) }} text={f.text} delay={0.1} />
+              </div>
+            ))}
+            <p className="col-start-2 col-end-[-1]" style={{ marginTop: U(45), marginLeft: U(35), maxWidth: U(330) }}>
+              <a href="#top" className="link flex w-full justify-between"><span>More about Tidewell</span><span>→</span></a>
+            </p>
+          </div>
         </section>
       </main>
 
-      <footer className="micro grid grid-cols-12 gap-x-5 gap-y-4 border-t border-line px-4 pt-8 pb-24 text-mute sm:px-6">
-        <p className="col-span-12 md:col-span-4">© 2026 Tidewell. A concept release site. The artist, dates and venues are fictional.</p>
-        <p className="col-span-6 md:col-span-4">Music generated live with WebAudio<br />Wordmark: MgOpen Moderna-derived typeface</p>
-        <p className="col-span-6 text-right md:col-span-4"><a href="#top" className="transition-opacity hover:opacity-60">Back to the surface ↑</a></p>
+      <footer className="site mt-var t-copy text-mute pb-[calc(var(--u)*70)] s:pb-[calc(var(--u)*15)]" style={mt(220, 400)}>
+        <p className="col-span-2 row-start-3 s:col-span-3 s:row-start-1 s:self-end">©2026 Tidewell</p>
+        <p className="col-span-2 row-start-2 s:col-span-3 s:col-start-4 s:row-start-1" style={{ marginTop: 0 }}>Concept release site<br />Names are fictional</p>
+        <p className="col-span-2 row-start-1 s:col-span-3 s:col-start-7">Music streams live from YouTube<br />Wordmark: MgOpen Moderna-derived typeface</p>
+        <p className="col-span-2 col-start-3 row-start-1 s:col-span-2 s:col-start-10"><a href="#tracks" className="link">Listen</a><br /><a href="#top" className="link">Back to the surface ↑</a></p>
+        <p className="col-span-2 row-start-3 text-right s:col-start-12 s:col-span-1 s:row-start-1 s:self-end">2026</p>
       </footer>
     </>
   );

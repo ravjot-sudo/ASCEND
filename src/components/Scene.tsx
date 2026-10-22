@@ -33,11 +33,11 @@ function Wordmark() {
     m.rotation.y = THREE.MathUtils.damp(m.rotation.y, signal.mx * 0.14 * k, 3, dt);
     m.rotation.x = THREE.MathUtils.damp(m.rotation.x, signal.my * 0.06 * k, 3, dt);
     m.scale.setScalar(1 + signal.bass * 0.05 * k);
-    mat.current.emissiveIntensity = signal.level * 0.45 * k;
+    mat.current.emissiveIntensity = 0.12 + signal.level * 0.45 * k;
   });
   return (
     <mesh ref={mesh} geometry={geo}>
-      <meshPhysicalMaterial ref={mat} color="#ececec" metalness={1} roughness={0.12} clearcoat={1} clearcoatRoughness={0.08} emissive="#ffffff" emissiveIntensity={0} />
+      <meshPhysicalMaterial ref={mat} color="#e2e5ff" metalness={1} roughness={0.12} clearcoat={1} clearcoatRoughness={0.08} emissive="#c9cdff" emissiveIntensity={0} />
       <Glints />
     </mesh>
   );
@@ -55,15 +55,32 @@ function Glints() {
   }, []);
   const pts = useMemo(() => [[-3.3, 1], [-1.9, 1], [-0.5, 1], [1.1, 1], [2.4, 1], [3.4, 1], [-2.7, -1], [0.3, -1], [2.9, -1]]
     .map(([x, e], i) => { const r = 8 + 0.4 * e; return { x: r * Math.sin(x / 8), y: r * Math.cos(x / 8) - 8, ph: i * 1.9, s: 0.28 + (i % 3) * 0.08 }; }), []);
-  const refs = useRef<THREE.Sprite[]>([]);
+  // Long thin diagonal flare through each glint (soft-ended line, rotated ~40°).
+  const streak = useMemo(() => {
+    const w = 256, h = 8, c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d")!, lg = g.createLinearGradient(0, 0, w, 0);
+    lg.addColorStop(0, "rgba(255,255,255,0)"); lg.addColorStop(0.5, "rgba(255,255,255,0.9)"); lg.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = lg; g.fillRect(0, h / 2 - 1, w, 2);
+    return new THREE.CanvasTexture(c);
+  }, []);
+  const refs = useRef<THREE.Sprite[]>([]), rays = useRef<THREE.Sprite[]>([]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    refs.current.forEach((sp, i) => { const p = pts[i], k = Math.max(0, Math.sin(t * 1.1 + p.ph)); sp.scale.setScalar(p.s * (0.25 + k * k + signal.level * 0.5)); });
+    refs.current.forEach((sp, i) => {
+      const p = pts[i], k = Math.max(0, Math.sin(t * 1.1 + p.ph)), s = p.s * (0.25 + k * k + signal.level * 0.5);
+      sp.scale.setScalar(s);
+      rays.current[i]?.scale.set(s * 7, s * 0.22, 1);
+    });
   });
   return pts.map((p, i) => (
-    <sprite key={i} ref={(el) => { if (el) refs.current[i] = el; }} position={[p.x, p.y, 0.32]}>
-      <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-    </sprite>
+    <group key={i} position={[p.x, p.y, 0.32]}>
+      <sprite ref={(el) => { if (el) refs.current[i] = el; }}>
+        <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      </sprite>
+      <sprite ref={(el) => { if (el) rays.current[i] = el; }}>
+        <spriteMaterial map={streak} rotation={0.7} opacity={0.7} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      </sprite>
+    </group>
   ));
 }
 
@@ -151,9 +168,9 @@ export default function Scene() {
         <Suspense fallback={null}>
           <Wordmark />
           <Environment resolution={256}>
-            <Lightformer form="rect" intensity={4} position={[0, 5, -6]} scale={[12, 2, 1]} />
+            <Lightformer form="rect" intensity={4} color="#eef0ff" position={[0, 5, -6]} scale={[12, 2, 1]} />
             <Lightformer intensity={2.5} position={[-6, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 0.6, 1]} />
-            <Lightformer intensity={1.5} position={[6, -1, -1]} rotation-y={-Math.PI / 2} scale={[20, 0.6, 1]} />
+            <Lightformer intensity={1.5} color="#8e95c7" position={[6, -1, -1]} rotation-y={-Math.PI / 2} scale={[20, 0.6, 1]} />
             <Lightformer form="ring" intensity={3} position={[0, 1, 7]} scale={2.5} />
           </Environment>
         </Suspense>

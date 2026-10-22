@@ -8,7 +8,7 @@ const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Tidewell, Undertow EP",
-  description: "Undertow, the debut EP from Tidewell: four generative tracks played live in your browser. A concept release site.",
+  description: "Undertow, the debut EP from Tidewell: the record streams live in your browser. A concept release site.",
 };
 export const viewport: Viewport = { themeColor: "#000000" };
 

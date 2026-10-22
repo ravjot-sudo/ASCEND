@@ -6,7 +6,17 @@
   --mute: #7d7d7d;
   --line: rgb(255 255 255 / 0.14);
   --glint: #ffffff;
+  /* Reference tokens (measured): */
+  --ink-dim: #232323; --chalk: #d9d9d9; --surface: #121314; --surface-2: #1d1f21; --hairline: #ffffff1a; --wash: #ffffff08;
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-flip: linear(0, .0101, .0374, .0781, .1289, .1869, .2496, .3149, .381, .4465, .5102, .5713, .629, .683, .7328, .7782, .8193, .8561, .8887, .9172, .9419, .963, .9808, .9956, 1);
+  /* u = the reference's 0.1rem: root font is min(12px, 100vw/40.2) on phones, min(12px, 100vw/150) from 650px. */
+  --u: min(1.2px, calc(100vw / 402));
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.62' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-.6'/%3E%3C/feComponentTransfer%3E%3CfeGaussianBlur stdDeviation='.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+@media (width >= 650px) { :root { --u: min(1.2px, calc(100vw / 1500)); } }
+@theme { --breakpoint-s: 40.625rem; } /* 650px, the reference's single breakpoint */
 @theme inline {
   --color-ink: var(--ink);
   --color-fg: var(--fg);
@@ -21,17 +31,71 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 ::selection { background: var(--glint); color: var(--ink); }
 :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
 
-.dots { background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.06) 1px, transparent 0); background-size: 6px 6px; }
+/* Reference system (measured, rebuilt): 12-col grid (4 on phones), 10u gaps and gutters; type in u. */
+.site { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: calc(var(--u) * 10); padding-inline: calc(var(--u) * 10); }
+.site-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: calc(var(--u) * 10); align-content: start; }
+@media (width >= 650px) { .site { grid-template-columns: repeat(12, minmax(0, 1fr)); } }
+.t-body { font-weight: 700; font-size: calc(var(--u) * 17); line-height: calc(var(--u) * 27); letter-spacing: -0.01em; }
+.t-copy { font-weight: 600; font-size: calc(var(--u) * 17); line-height: calc(var(--u) * 22); letter-spacing: -0.01em; }
+.t-meta { font-weight: 600; font-size: calc(var(--u) * 13); line-height: calc(var(--u) * 16); letter-spacing: -0.01em; }
+.t-mark { font-weight: 700; font-size: calc(var(--u) * 13); line-height: calc(var(--u) * 27); letter-spacing: -0.01em; position: relative; top: -0.31em; }
+.t-display { font-weight: 700; font-size: calc(var(--u) * 25); line-height: calc(var(--u) * 27); letter-spacing: -0.01em; }
+.t-title { font-weight: 700; font-size: calc(var(--u) * 25); line-height: calc(var(--u) * 27); letter-spacing: -0.01em; }
+@media (width >= 650px) {
+  .t-mark { font-size: calc(var(--u) * 17); top: 0; }
+  .t-display { font-size: calc(var(--u) * 50); line-height: calc(var(--u) * 45); }
+  .t-title { font-size: calc(var(--u) * 30); }
+}
+/* First-line indent by whole columns: --indent columns of a --cols grid with 10u gaps. */
+.col-indent { --cols: 4; --gap: calc(var(--u) * 10); }
+@media (width >= 650px) { .col-indent { --cols: 12; } }
+.col-indent, .col-indent > .line-mask:first-child { text-indent: calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols) * var(--indent, 0) + var(--indent, 0) * var(--gap)); }
+.col-indent.is-split { text-indent: 0; }
+.lead-in { line-height: calc(var(--u) * 15); }
+@media (width >= 650px) { .lead-in { line-height: calc(var(--u) * 18); } }
+.indent-half, .indent-full { --step: calc(25% + var(--u) * 2.5); }
+.indent-half { padding-left: calc(var(--step) * 0.5); }
+.indent-full { padding-left: var(--step); }
+.link { transition: opacity 0.5s ease-out; }
+.link:hover { opacity: 0.5; }
+.hoverable { position: relative; isolation: isolate; }
+.hoverable::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--wash); opacity: 0; pointer-events: none; transition: opacity 0.15s var(--ease-out-quad); }
+.hoverable:hover::after { opacity: 1; }
+/* Margins that differ per breakpoint: --mt on phones, --mt-s from 650px. Registered non-inheriting, so a child
+   with .mt-var never picks up its parent's margin. */
+@property --mt { syntax: "*"; inherits: false; }
+@property --mt-s { syntax: "*"; inherits: false; }
+.mt-var { margin-top: var(--mt, 0); }
+@media (width >= 650px) { .mt-var { margin-top: var(--mt-s, var(--mt, 0)); } }
+/* Track cues: hovering a mention dims the section and lights that track. */
+[data-cue] { cursor: pointer; }
+.cued { color: var(--ink-dim); }
+.cued .lit { color: #fff; }
+.scrolling [data-cue] { pointer-events: none; }
+.ride { font-size: calc(var(--u) * 13); position: relative; top: calc(var(--u) * -4); }
+.raised { white-space: nowrap; width: 0; display: inline-block; position: relative; top: calc(var(--u) * -8.5); left: calc(var(--u) * 2); }
+@media (width >= 650px) { .ride { font-size: calc(var(--u) * 17); } .raised { top: calc(var(--u) * -26); } }
+/* Hero height: phones 100svh; from 650px 66.4svh + 55% of the width - 11u. */
+.hero { height: 100svh; }
+@media (width >= 650px) { .hero { height: 0; padding-top: 66.4svh; padding-bottom: calc(55% - var(--u) * 11); } }
+/* After the gate: labels slide up out of masks (1.25 s expo-out, 0.1 s stagger); panels rise (1.4 s). */
+.slide-mask { display: block; overflow: clip; }
+.slide-up { display: block; transform: translateY(105%); transition: transform 1.25s var(--ease-expo-out) var(--d, 0s); }
+.entered .slide-up { transform: none; }
+.panel-rise { transform: translateY(calc(100% + var(--u) * 20)); transition: transform 1.4s var(--ease-expo-out) var(--d, 0s); }
+.entered .panel-rise { transform: none; }
+.eq i { display: block; width: calc(var(--u) * 2); height: 30%; background: currentColor; }
+.eq.on i { animation: eq 0.9s ease-in-out infinite alternate; }
+.eq.on i:nth-child(2) { animation-delay: -0.3s; } .eq.on i:nth-child(3) { animation-delay: -0.6s; }
+@keyframes eq { from { height: 25%; } to { height: 100%; } }
+
 .micro { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .note { font-weight: 700; font-size: clamp(28px, 3.6vw, 60px); line-height: 1.04; letter-spacing: -0.028em; }
 
 .chrome { background: linear-gradient(180deg, #fff 0%, #a9a9a9 46%, #f4f4f4 54%, #5f5f5f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-/* Line reveal (Lines.tsx). First line indents by whole grid columns (12-col grid, 1.25rem gaps). */
-.indent-cols { --indent: calc((100% + 1.25rem) * 4 / 12); }
-@media (min-width: 768px) { .indent-cols { --indent: calc((100% + 1.25rem) * 5 / 12); } }
-.lines:not(.is-split).indent-cols { text-indent: var(--indent); }
-.lines .line-mask { display: block; overflow: clip; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+/* Line reveal (Lines.tsx). */
+.lines .line-mask { display: block; overflow-x: visible; overflow-y: clip; padding-bottom: 0.12em; margin-bottom: -0.12em; } /* clip vertically only: long nowrap lines may run past the column */
 .lines .line { display: block; transform: translateY(105%); transition: transform 1.75s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0s) + var(--l, 0) * 0.1s); }
 .lines.is-shown .line { transform: none; }
 
@@ -47,25 +111,38 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Gate: the record sleeve with the CD peeking out. Disc translates are % of the disc box. */
-.grain { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E"); }
-.cover-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(20px, 3.2vh, 36px); outline: none; }
-.cover-box { position: relative; display: block; width: min(44vw, 56svh, 600px); aspect-ratio: 1; transform: translateX(-7%); transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
-.cover { position: absolute; inset: 0; z-index: 1; display: block; overflow: hidden; border-radius: 4px; background: #050505;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08), 30px 0 60px -20px rgb(0 0 0 / 0.9); }
-.cover-disc { position: absolute; inset: 3%; z-index: 0; display: block; --disc: 100%; --disc-label: clamp(10px, 1.4vw, 18px); --disc-label-y: clamp(-34px, -2.6vw, -16px);
-  transform: translateX(16%); transition: transform 1s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.grain { background-color: #000; }
+.grain::before, .grain-layer::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: var(--noise), var(--noise); background-position: 0 0, 74px 106px; opacity: 0.175; }
+.cover-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; outline: none; }
+/* Sleeve: 240u, like the reference's w-240 (230px at 1440, ~233px on a 390px phone). */
+/* Separate channels so they never fight: `scale`+opacity = pop-in, `translate`/`rotate` = the throw on enter.
+   The sleeve and the CD keep their size; only the CD travels with the pointer pull. */
+.cover-box { position: relative; display: block; flex: none; width: calc(var(--u) * 240); height: calc(var(--u) * 240); opacity: 0; scale: 0.6;
+ }
+.cover-wrap.is-ready .cover-box { animation: pop-in 1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+@keyframes pop-in { 0% { opacity: 0; scale: 0.6; } 55% { opacity: 1; scale: 1.045; } 100% { opacity: 1; scale: 1; } }
+.cover { position: absolute; inset: 0; z-index: 1; display: block; overflow: hidden; border-radius: 3px; background: #050505;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08), 24px 0 50px -18px rgb(0 0 0 / 0.9); }
+/* The CD rides --pull (0..1) set by the pointer spring: slides out of the sleeve and grows a little. */
+.cover-disc { position: absolute; inset: 3%; z-index: 0; display: block; --disc: 100%; --disc-label: clamp(8px, 0.7vw, 12px); --disc-label-y: clamp(-24px, -1.3vw, -12px);
+  transform: translateX(calc(var(--pull, 0) * 56%)); }
 .cover-disc .disc-spin { animation-duration: 6s; }
-.cover-wrap:hover .cover-disc, .cover-wrap:focus-visible .cover-disc { transform: translateX(30%); }
 .cover-wrap:focus-visible .cover { outline: 2px solid var(--glint); outline-offset: 4px; }
-.cover-wrap.is-entering .cover-disc { transform: translateX(62%); }
+.gate-label { transition: opacity 0.5s; }
+@media (hover: hover) { .gate-label { visibility: hidden; } }
+@media (hover: none) { .cover-disc { transform: translateX(20%); } }
+/* Launch: the sleeve (with its CD) is thrown to the lower left with an ease-in, then the curtain fades. */
+.cover-wrap.is-entering .cover-box { translate: -150% 35%; rotate: -10deg; transition: translate 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) 0.1s, rotate 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) 0.1s; }
 .cover-wrap.is-entering .cover-disc .disc-spin { animation-duration: 0.8s; }
-.cover-wrap.is-entering .cover-box { transform: translateX(-20%) scale(0.97); }
+.cover-wrap.is-entering .gate-label { opacity: 0; }
 .twinkle { animation: twinkle 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; opacity: 0.2; }
 @keyframes twinkle { 0%, 100% { opacity: 0.15; } 45% { opacity: 1; } }
-@media (max-width: 640px) { .cover-box { width: min(72vw, 52svh); } }
 
 @media (prefers-reduced-motion: reduce) {
+  .slide-up, .panel-rise, .lines .line { transform: none; transition: none; }
+  .eq.on i { animation: none; height: 70%; }
   .twinkle { animation: none; opacity: 0.8; }
   .cover-disc, .cover-box { transition: none; }
+  .cover-box, .cover-wrap.is-ready .cover-box { animation: none; opacity: 1; scale: 1; }
   .disc-spin { animation: none; }
 }
