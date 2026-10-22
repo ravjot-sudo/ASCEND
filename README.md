@@ -5,7 +5,7 @@
 <br />
 <br />
 
-# U N D E R T O W
+# A S C E N D
 
 **A concept EP release site for a fictional artist, Tidewell.**<br />
 Black, silver, a moon on the water, and four tracks your browser writes live.
