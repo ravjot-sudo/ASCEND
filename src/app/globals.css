@@ -7,7 +7,7 @@
   --line: rgb(255 255 255 / 0.14);
   --glint: #ffffff;
   /* Reference tokens (measured): */
-  --ink-dim: #232323; --chalk: #d9d9d9; --surface: #121314; --surface-2: #1d1f21; --hairline: #ffffff1a; --wash: #ffffff08;
+  --ink-dim: #232323; --line-strong: #313233; --chalk: #d9d9d9; --surface: #121314; --surface-2: #1d1f21; --hairline: #ffffff1a; --wash: #ffffff08;
   --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-flip: linear(0, .0101, .0374, .0781, .1289, .1869, .2496, .3149, .381, .4465, .5102, .5713, .629, .683, .7328, .7782, .8193, .8561, .8887, .9172, .9419, .963, .9808, .9956, 1);
@@ -78,7 +78,7 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 .hero { height: 100svh; }
 @media (width >= 650px) { .hero { height: 0; padding-top: 66.4svh; padding-bottom: calc(55% - var(--u) * 11); } }
 /* After the gate: labels slide up out of masks (1.25 s expo-out, 0.1 s stagger); panels rise (1.4 s). */
-.slide-mask { display: block; overflow: clip; }
+.slide-mask { display: block; overflow-x: visible; overflow-y: clip; }
 .slide-up { display: block; transform: translateY(105%); transition: transform 1.25s var(--ease-expo-out) var(--d, 0s); }
 .entered .slide-up { transform: none; }
 .panel-rise { transform: translateY(calc(100% + var(--u) * 20)); transition: transform 1.4s var(--ease-expo-out) var(--d, 0s); }
@@ -97,6 +97,18 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 .lines .line-mask { display: block; overflow-x: visible; overflow-y: clip; padding-bottom: 0.12em; margin-bottom: -0.12em; } /* clip vertically only: long nowrap lines may run past the column */
 .lines .line { display: block; transform: translateY(105%); transition: transform 1.75s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0s) + var(--l, 0) * 0.1s); }
 .lines.is-shown .line { transform: none; }
+
+/* Sequencer page (measured reference layout on desktop; phones stack the panels and scroll the step grid sideways). */
+.seq { min-height: 100svh; padding-top: calc(var(--u) * 250); }
+.seq-top { display: grid; row-gap: calc(var(--u) * 10); }
+.seq-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.seq-grid { display: grid; min-width: 820px; grid-template-columns: calc(var(--u) * 110) repeat(16, minmax(0, 1fr)); grid-template-rows: calc(var(--u) * 30) repeat(var(--rows), 44px); column-gap: calc(var(--u) * 7); row-gap: calc(var(--u) * 4.5); height: 100%; }
+@media (width >= 650px) {
+  .seq { height: 100svh; padding-top: calc(var(--u) * 170); }
+  .seq-top { grid-template-columns: calc(var(--u) * 216) minmax(0, 1fr); column-gap: calc(var(--u) * 7); align-items: end; }
+  .seq-scroll { overflow: visible; }
+  .seq-grid { min-width: 0; grid-template-columns: calc(var(--u) * 216) repeat(16, minmax(0, 1fr)); grid-template-rows: calc(var(--u) * 30) repeat(var(--rows), minmax(0, 1fr)); }
+}
 
 /* Player disc: silver sheen stays put (like light on a real disc) while the label spins. */
 .disc { position: relative; display: block; width: var(--disc, min(52vw, 190px)); aspect-ratio: 1; border-radius: 9999px;

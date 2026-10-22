@@ -55,7 +55,8 @@ export function Gate() {
   };
   useEffect(() => {
     let off = false;
-    Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 3000))]).then(() => { if (!off) setState("open"); });
+    // Coming back from another page of the site: the visitor has already entered, so no gate.
+    Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 3000))]).then(() => { if (!off) setState(document.documentElement.classList.contains("entered") ? "gone" : "open"); });
     return () => { off = true; };
   }, []);
   useEffect(() => {

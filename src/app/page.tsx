@@ -1,17 +1,15 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import Scene from "@/components/Scene";
 import { Lines } from "@/components/Lines";
 import { MediaPanel } from "@/components/MediaPanel";
 import { CuePreview, CueSection } from "@/components/Cue";
 import { Gate, Player, SmoothScroll } from "@/components/ui";
+import { SiteHeader, Slide } from "@/components/SiteHeader";
 
 // u = the reference's 0.1rem (viewport-scaled, see globals.css). Spacing below is the measured reference rhythm.
 const U = (n: number) => `calc(var(--u) * ${n})`;
 const mt = (m: number, s?: number) => ({ "--mt": U(m), ...(s === undefined ? {} : { "--mt-s": U(s) }) }) as CSSProperties;
-// A label that slides up out of its mask after the gate (1.25 s expo-out, staggered by `d`).
-const Slide = ({ d = 0, children }: { d?: number; children: ReactNode }) => (
-  <span className="slide-mask"><span className="slide-up" style={{ "--d": `${0.1 * d}s` } as CSSProperties}>{children}</span></span>
-);
+
 
 const INTRO = "Undertow is four pieces about the pull you don't notice until you're already in it. No samples, no stems, no files: every note you hear is written live, the moment you press play.";
 const BIO = "Tidewell is a made-up artist from a made-up coast, a name for whatever the code decides to play tonight. The sound is cold and patient: long pads, a kick you feel more than hear, and melodies that never land in the same place twice.";
@@ -51,21 +49,7 @@ export default function Home() {
       <CuePreview />
       <Player />
 
-      <header className="site t-body absolute inset-x-0 top-0 z-30 items-start text-mute" style={{ paddingTop: U(6) }}>
-        <a href="#top" className="link col-span-2 row-start-1 text-[var(--chalk)]" style={{ marginTop: U(1) }}><Slide>Tidewell°</Slide></a>
-        <a href="#tracks" className="link hidden s:col-start-3 s:row-start-1 s:block"><Slide d={1}>Listen</Slide></a>
-        <a href="#notes" className="link hidden s:col-start-4 s:row-start-1 s:block" style={{ marginLeft: U(30) }}><Slide d={2}>Notes</Slide></a>
-        <a href="#about" className="link hidden s:col-start-6 s:row-start-1 s:block"><Slide d={3}>About</Slide></a>
-        <div className="mt-var col-span-4 row-start-2 s:col-span-4 s:col-start-8 s:row-start-1" style={mt(16, 7)}>
-          <Lines as="p" className="t-title lead-in" text="“Undertow” Debut EP" />
-          <Lines as="p" className="t-title indent-half whitespace-nowrap" style={{ marginTop: U(3) }} text="Side A: Undertow, Salt Choir" />
-          <Lines as="p" className="t-title indent-half s:whitespace-nowrap" text="Side B: Low Water, Riptide Hymn" />
-          <Lines as="p" className="t-title indent-full" text="21.11.2026 00:00" />
-          <Lines as="p" className="t-title indent-full" text="Streams live" />
-          <Lines as="p" className="t-title indent-full" text="©2026" />
-        </div>
-        <a href="#tracks" className="link col-start-4 row-start-1 text-right s:col-start-12"><Slide d={4}>Play</Slide></a>
-      </header>
+      <SiteHeader />
 
       <main id="top">
         <section className="hero relative">
