@@ -128,9 +128,12 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
     conic-gradient(from 30deg, #5e5e5e, #f4f4f4 11%, #8c8c8c 24%, #dcdcdc 37%, #555 50%, #f0f0f0 61%, #7a7a7a 74%, #e2e2e2 87%, #5e5e5e);
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18), 0 24px 60px -24px rgb(255 255 255 / 0.3); }
 .disc-spin { position: absolute; inset: 0; border-radius: 9999px; display: grid; place-items: center; animation: spin 3.6s linear infinite;
-  background: radial-gradient(circle, #111 0 3.5%, #000 4% 31%, rgb(255 255 255 / 0.25) 31.5%, transparent 32.5%); }
+  background: radial-gradient(circle, #111 0 3.5%, #000 4% 34%, rgb(255 255 255 / 0.25) 34.5%, transparent 35.5%); }
 .disc-spin span { transform: translateY(var(--disc-label-y, -15px)); font: 700 var(--disc-label, 9px)/1 var(--font-sans), sans-serif; letter-spacing: -0.02em; color: #fff; }
 .disc-spin.paused { animation-play-state: paused; }
+/* The 3D mini word (DiscWord) replaces the text label once its GL view is up; a soft glow like the hero's. */
+.disc:has(.disc-word) .disc-spin span { visibility: hidden; }
+.disc-word { pointer-events: none; filter: drop-shadow(0 0 calc(var(--u) * 3) rgb(235 238 255 / 0.5)); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Gate: the record sleeve with the CD peeking out. Disc translates are % of the disc box. */

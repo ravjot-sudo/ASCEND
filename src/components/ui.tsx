@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 import { TRACKS, audioStore, elapsed, nextTrack, playTrack, prevTrack, readWave, toggle } from "@/lib/audio";
 import { signal } from "@/lib/signal";
 import { Cover } from "./Cover";
+import { DiscWord } from "./DiscWord";
 
 const useAudio = () => useSyncExternalStore(audioStore.subscribe, audioStore.get, audioStore.get);
 
@@ -94,7 +95,7 @@ export function Gate() {
         <button onClick={(e) => { e.stopPropagation(); enter(true); }} aria-label="Click to enter, sound on" className={`cover-wrap group ${state === "loading" ? "" : "is-ready"} ${state === "entering" || state === "fading" ? "is-entering" : ""}`}>
           <span ref={box} className="cover-box">
             <span ref={disc} className="cover-disc" aria-hidden>
-              <span className="disc"><span className="disc-spin"><span>ASCEND</span></span></span>
+              <span className="disc"><span className="disc-spin"><span>ASCEND</span></span><DiscWord period={6} /></span>
             </span>
             <Cover />
           </span>
@@ -157,7 +158,7 @@ export function Player() {
             ))}
           </ol>
           <div className="grid place-items-center py-6">
-            <div aria-hidden className="disc"><div className={`disc-spin ${s.playing ? "" : "paused"}`}><span>ASCEND</span></div></div>
+            <div aria-hidden className="disc"><div className={`disc-spin ${s.playing ? "" : "paused"}`}><span>ASCEND</span></div><DiscWord period={3.6} spinning={s.playing} /></div>
           </div>
           <div className="flex justify-between gap-2 text-mute"><span className="truncate text-fg">Tidewell · {t.title}</span><span ref={time}>00:00</span><span className="shrink-0">YouTube</span>
           </div>

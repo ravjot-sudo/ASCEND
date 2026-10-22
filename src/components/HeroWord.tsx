@@ -39,6 +39,32 @@ function useWordGeometry() {
   }, []);
 }
 
+// The word itself, shared by the hero and the mini on the CD: the artwork's chrome lettering glowing on the caps
+// (it brightens with the music) and dark gunmetal chrome on the bevels and sides.
+export function WordMesh() {
+  const tex = useTexture("/media/ascend-word.webp", (t) => { for (const x of [t].flat()) x.colorSpace = THREE.SRGBColorSpace; });
+  const geo = useWordGeometry(), cap = useRef<THREE.MeshPhysicalMaterial>(null!);
+  useFrame(() => { cap.current.emissiveIntensity = 1 + signal.level * 0.25; });
+  return (
+    <mesh geometry={geo}>
+      <meshPhysicalMaterial attach="material-0" ref={cap} color="#000000" emissive="#ffffff" emissiveMap={tex} emissiveIntensity={1} metalness={1} roughness={0.22} clearcoat={1} clearcoatRoughness={0.1} toneMapped={false} />
+      <meshPhysicalMaterial attach="material-1" color="#6b6c72" metalness={1} roughness={0.28} clearcoat={0.5} envMapIntensity={0.8} />
+    </mesh>
+  );
+}
+
+// Studio light for the chrome (no HDR download).
+export function WordLight() {
+  return (
+    <Environment resolution={256}>
+      <Lightformer form="rect" intensity={4} color="#eef0ff" position={[0, 4, -4]} scale={[10, 2, 1]} />
+      <Lightformer intensity={2} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 0.6, 1]} />
+      <Lightformer intensity={1.2} position={[5, -1, -1]} rotation-y={-Math.PI / 2} scale={[16, 0.6, 1]} />
+      <Lightformer form="ring" intensity={2.5} position={[0, 1, 5]} scale={2} />
+    </Environment>
+  );
+}
+
 // Star glints at letter tips (word-crop px), each a soft 4-point star with a long diagonal streak.
 const TIPS: [number, number][] = [[35, 556], [345, 82], [470, 40], [640, 26], [830, 24], [1100, 40], [1290, 300], [1225, 440], [255, 300]];
 function Stars() {
@@ -77,9 +103,7 @@ function Stars() {
 }
 
 function Word() {
-  const tex = useTexture("/media/ascend-word.webp", (t) => { for (const x of [t].flat()) x.colorSpace = THREE.SRGBColorSpace; });
-  const geo = useWordGeometry();
-  const word = useRef<THREE.Group>(null!), stars = useRef<THREE.Group>(null!), cap = useRef<THREE.MeshPhysicalMaterial>(null!);
+  const word = useRef<THREE.Group>(null!), stars = useRef<THREE.Group>(null!);
   const born = useRef(0), tilt = useRef(new THREE.Vector2());
   useEffect(() => {
     const on = () => { born.current = performance.now(); };
@@ -102,16 +126,10 @@ function Word() {
     st.rotation.set(t.y * LEAN * 1.15 + scroll * TURN, t.x * LEAN * 1.15, 0);
     st.position.copy(w.position);
     st.visible = intro > 0.92;
-    cap.current.emissiveIntensity = 1 + signal.level * 0.25;
   });
   return (
     <>
-      <group ref={word}>
-        <mesh geometry={geo}>
-          <meshPhysicalMaterial attach="material-0" ref={cap} color="#000000" emissive="#ffffff" emissiveMap={tex} emissiveIntensity={1} metalness={1} roughness={0.22} clearcoat={1} clearcoatRoughness={0.1} toneMapped={false} />
-          <meshPhysicalMaterial attach="material-1" color="#6b6c72" metalness={1} roughness={0.28} clearcoat={0.5} envMapIntensity={0.8} />
-        </mesh>
-      </group>
+      <group ref={word}><WordMesh /></group>
       <group ref={stars}><Stars /></group>
     </>
   );
@@ -120,10 +138,11 @@ function Word() {
 const webgl = () => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { return false; } };
 let gl: boolean | undefined;
 const noop = () => () => {};
+export const useWebGL = () => useSyncExternalStore(noop, () => (gl ??= webgl()), () => null); // probed once
 
 export function HeroWord() {
   const el = useRef<HTMLDivElement>(null);
-  const ok = useSyncExternalStore(noop, () => (gl ??= webgl()), () => null);
+  const ok = useWebGL();
   useEffect(() => {
     const node = el.current!;
     let end = 1;
@@ -145,12 +164,7 @@ export function HeroWord() {
       {ok && (
         <Canvas className="hero-canvas !absolute inset-0" dpr={[1, 2]} gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }} camera={{ position: [0, 0, CAM_Z], fov: FOV }}>
           <Suspense fallback={null}>
-            <Environment resolution={256}>
-              <Lightformer form="rect" intensity={4} color="#eef0ff" position={[0, 4, -4]} scale={[10, 2, 1]} />
-              <Lightformer intensity={2} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[16, 0.6, 1]} />
-              <Lightformer intensity={1.2} position={[5, -1, -1]} rotation-y={-Math.PI / 2} scale={[16, 0.6, 1]} />
-              <Lightformer form="ring" intensity={2.5} position={[0, 1, 5]} scale={2} />
-            </Environment>
+            <WordLight />
             <Word />
           </Suspense>
         </Canvas>
