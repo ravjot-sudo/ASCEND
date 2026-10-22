@@ -31,10 +31,18 @@ export function SmoothScroll() {
 type GateState = "loading" | "open" | "entering" | "fading" | "gone";
 export function Gate() {
   const [state, setState] = useState<GateState>("loading");
-  const done = useRef(false), box = useRef<HTMLSpanElement>(null), chip = useRef<HTMLSpanElement>(null);
+  const done = useRef(false), box = useRef<HTMLSpanElement>(null), disc = useRef<HTMLSpanElement>(null), chip = useRef<HTMLSpanElement>(null);
   const enter = (sound: boolean) => {
     if (done.current) return;
     done.current = true;
+    // Disc exit target in the box's local units (the box is scaled by its zoom): 0.2 widths past the right edge, 0.6 heights up.
+    const d = disc.current, b = box.current;
+    if (d && b) {
+      const r = d.getBoundingClientRect(), zoom = r.width / d.offsetWidth || 1;
+      d.style.setProperty("--ex", `${(innerWidth + r.width * 0.2 - r.left) / zoom}px`);
+      d.style.setProperty("--ey", `${(-0.6 * r.height) / zoom}px`);
+    }
+    if (chip.current) { chip.current.style.transition = "none"; chip.current.style.opacity = "0"; }
     if (sound) playTrack(0);
     const quick = matchMedia("(prefers-reduced-motion: reduce)").matches;
     setState(quick ? "fading" : "entering");
@@ -65,7 +73,7 @@ export function Gate() {
       if (b) {
         const r = b.getBoundingClientRect(), d = Math.hypot(px - (r.left + r.width / 2), py - (r.top + r.height / 2));
         const n = seen ? 1 - Math.min(1, d / (2.5 * r.width)) : 0, target = n * n * (3 - 2 * n);
-        vel += ((target - val) * 140 - vel * 16) * dt; val += vel * dt;
+        if (!done.current) { vel += ((target - val) * 140 - vel * 16) * dt; val += vel * dt; } // frozen once launched
         b.style.setProperty("--pull", val.toFixed(4));
       }
       if (chip.current) chip.current.style.transform = `translate3d(calc(${px}px + var(--u) * 10), calc(${py}px + var(--u) * 10), 0)`;
@@ -84,7 +92,7 @@ export function Gate() {
       <div className="flex flex-col items-center gap-5 px-6 text-center">
         <button onClick={(e) => { e.stopPropagation(); enter(true); }} aria-label="Click to enter, sound on" className={`cover-wrap group ${state === "loading" ? "" : "is-ready"} ${state === "entering" || state === "fading" ? "is-entering" : ""}`}>
           <span ref={box} className="cover-box">
-            <span className="cover-disc" aria-hidden>
+            <span ref={disc} className="cover-disc" aria-hidden>
               <span className="disc"><span className="disc-spin"><span>UNDERTOW</span></span></span>
             </span>
             <Cover />

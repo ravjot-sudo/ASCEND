@@ -13,7 +13,6 @@
   --ease-flip: linear(0, .0101, .0374, .0781, .1289, .1869, .2496, .3149, .381, .4465, .5102, .5713, .629, .683, .7328, .7782, .8193, .8561, .8887, .9172, .9419, .963, .9808, .9956, 1);
   /* u = the reference's 0.1rem: root font is min(12px, 100vw/40.2) on phones, min(12px, 100vw/150) from 650px. */
   --u: min(1.2px, calc(100vw / 402));
-  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.62' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-.6'/%3E%3C/feComponentTransfer%3E%3CfeGaussianBlur stdDeviation='.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 @media (width >= 650px) { :root { --u: min(1.2px, calc(100vw / 1500)); } }
 @theme { --breakpoint-s: 40.625rem; } /* 650px, the reference's single breakpoint */
@@ -112,13 +111,13 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 
 /* Gate: the record sleeve with the CD peeking out. Disc translates are % of the disc box. */
 .grain { background-color: #000; }
-.grain::before, .grain-layer::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: var(--noise), var(--noise); background-position: 0 0, 74px 106px; opacity: 0.175; }
+.grain::before, .grain-layer::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: url(/media/grain.png), url(/media/grain.png); background-position: 0 0, 74px 106px; opacity: 0.175; } /* reference: two offset layers of a 200px speck tile at .175 */
 .cover-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; outline: none; }
 /* Sleeve: 240u, like the reference's w-240 (230px at 1440, ~233px on a 390px phone). */
 /* Separate channels so they never fight: `scale`+opacity = pop-in, `transform` = pointer pull (the sleeve grows
-   to 1.4x, the reference's 1 + .4 * pull, and tilts), `translate`/`rotate` = the throw on enter. */
+   to 1.4x, the reference's 1 + .4 * pull; no tilt), `translate`/`rotate` = the throw on enter. */
 .cover-box { position: relative; display: block; flex: none; width: calc(var(--u) * 240); height: calc(var(--u) * 240); opacity: 0; scale: 0.6;
-  transform: perspective(1400px) rotateY(calc(var(--pull, 0) * -9deg)) rotateZ(calc(var(--pull, 0) * -1.5deg)) scale(calc(1 + var(--pull, 0) * 0.4)); }
+  --zoom: calc(1 + var(--pull, 0) * 0.4); transform: scale(var(--zoom)); }
 .cover-wrap.is-ready .cover-box { animation: pop-in 1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 @keyframes pop-in { 0% { opacity: 0; scale: 0.6; } 55% { opacity: 1; scale: 1.045; } 100% { opacity: 1; scale: 1; } }
 .cover { position: absolute; inset: 0; z-index: 1; display: block; overflow: hidden; border-radius: 3px; background: #050505;
@@ -132,8 +131,39 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 @media (hover: hover) { .gate-label { visibility: hidden; } }
 @media (hover: none) { .cover-disc { transform: translateX(20%); } }
 /* Launch: the sleeve (with its CD) is thrown to the lower left with an ease-in, then the curtain fades. */
-.cover-wrap.is-entering .cover-box { translate: -150% 35%; rotate: -10deg; transition: translate 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) 0.1s, rotate 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) 0.1s; }
-.cover-wrap.is-entering .cover-disc .disc-spin { animation-duration: 0.8s; }
+/* Launch (reference): the sleeve slides left by half the viewport plus its own scaled width and down 0.35 of it,
+   0.6 s power2.in after 0.1 s (local units: the box is scaled by --zoom). The disc flies the other way (below). */
+.cover-wrap.is-entering .cover { translate: calc(-50vw / var(--zoom) - 100%) 35%; transition: translate 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) 0.1s; }
+.cover-wrap.is-entering .cover-disc { animation: disc-exit 0.9s linear forwards; }
+.cover-disc { perspective: calc(var(--u) * 1500); }
+.cover-disc .disc { transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1); }
+.cover-wrap.is-entering .cover-disc .disc { transform: rotateY(90deg) rotate(120deg); }
+/* Disc exit (reference): 0.9 s; position eased e^2/(e^2+(1-e)^3) toward 0.2 widths past the right edge and 0.6
+   heights up; scale bumps 1 -> 1.45 -> 1 (1 + .45 * sin(pi * cubicInOut(e))). Sampled every 5%. */
+@keyframes disc-exit {
+  0% { translate: calc(var(--ex) * 0.0000) calc(var(--ey) * 0.0000); scale: 1.0000; }
+  5% { translate: calc(var(--ex) * 0.0029) calc(var(--ey) * 0.0029); scale: 1.0007; }
+  10% { translate: calc(var(--ex) * 0.0135) calc(var(--ey) * 0.0135); scale: 1.0057; }
+  15% { translate: calc(var(--ex) * 0.0353) calc(var(--ey) * 0.0353); scale: 1.0191; }
+  20% { translate: calc(var(--ex) * 0.0725) calc(var(--ey) * 0.0725); scale: 1.0452; }
+  25% { translate: calc(var(--ex) * 0.1290) calc(var(--ey) * 0.1290); scale: 1.0878; }
+  30% { translate: calc(var(--ex) * 0.2079) calc(var(--ey) * 0.2079); scale: 1.1498; }
+  35% { translate: calc(var(--ex) * 0.3085) calc(var(--ey) * 0.3085); scale: 1.2309; }
+  40% { translate: calc(var(--ex) * 0.4255) calc(var(--ey) * 0.4255); scale: 1.3241; }
+  45% { translate: calc(var(--ex) * 0.5490) calc(var(--ey) * 0.5490); scale: 1.4098; }
+  50% { translate: calc(var(--ex) * 0.6667) calc(var(--ey) * 0.6667); scale: 1.4500; }
+  55% { translate: calc(var(--ex) * 0.7685) calc(var(--ey) * 0.7685); scale: 1.4098; }
+  60% { translate: calc(var(--ex) * 0.8491) calc(var(--ey) * 0.8491); scale: 1.3241; }
+  65% { translate: calc(var(--ex) * 0.9079) calc(var(--ey) * 0.9079); scale: 1.2309; }
+  70% { translate: calc(var(--ex) * 0.9478) calc(var(--ey) * 0.9478); scale: 1.1498; }
+  75% { translate: calc(var(--ex) * 0.9730) calc(var(--ey) * 0.9730); scale: 1.0878; }
+  80% { translate: calc(var(--ex) * 0.9877) calc(var(--ey) * 0.9877); scale: 1.0452; }
+  85% { translate: calc(var(--ex) * 0.9954) calc(var(--ey) * 0.9954); scale: 1.0191; }
+  90% { translate: calc(var(--ex) * 0.9988) calc(var(--ey) * 0.9988); scale: 1.0057; }
+  95% { translate: calc(var(--ex) * 0.9999) calc(var(--ey) * 0.9999); scale: 1.0007; }
+  100% { translate: calc(var(--ex) * 1.0000) calc(var(--ey) * 1.0000); scale: 1.0000; }
+}
+
 .cover-wrap.is-entering .gate-label { opacity: 0; }
 .twinkle { animation: twinkle 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; opacity: 0.2; }
 @keyframes twinkle { 0%, 100% { opacity: 0.15; } 45% { opacity: 1; } }
@@ -142,7 +172,8 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
   .slide-up, .panel-rise, .lines .line { transform: none; transition: none; }
   .eq.on i { animation: none; height: 70%; }
   .twinkle { animation: none; opacity: 0.8; }
-  .cover-disc, .cover-box { transition: none; }
+  .cover-disc, .cover-box, .cover, .cover-disc .disc { transition: none; }
+  .cover-wrap.is-entering .cover-disc { animation: none; }
   .cover-box, .cover-wrap.is-ready .cover-box { animation: none; opacity: 1; scale: 1; }
   .disc-spin { animation: none; }
 }
