@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, Sparkles } from "@react-three/drei";
+import { Environment, Lightformer, Sparkles, useTexture } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
@@ -14,6 +14,42 @@ const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 let gl: boolean | undefined; // probe once: useSyncExternalStore calls getSnapshot on every render
 const webgl = () => (gl ??= (() => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { return false; } })());
 const noop = () => () => {};
+
+// 1 = the hero artwork is fully shown, 0 = scrolled away / under the sea. Written by HeroArt,
+// read by the sea elements so they stay hidden while the artwork is on screen.
+const artState = { t: 1 };
+
+// The cover artwork lives inside the scene, behind the chrome word: the click that enters sets a
+// born-time (the picture settles from a slight over-scale — the pop) and scrolling dissolves it
+// into the sea the word floats over. Contain-fit against the frustum; the artwork's own black
+// surround blends into the page, so its edges never show.
+function HeroArt() {
+  const tex = useTexture("/media/ascend-cover.jpeg");
+  const mesh = useRef<THREE.Mesh>(null!), mat = useRef<THREE.MeshBasicMaterial>(null!);
+  const born = useRef(0);
+  useEffect(() => {
+    const on = () => { born.current = performance.now(); };
+    if (!born.current && document.documentElement.classList.contains("entered")) born.current = performance.now() - 900; // returning visitor: no pop
+    addEventListener("undertow:entered", on);
+    return () => removeEventListener("undertow:entered", on);
+  }, []);
+  useFrame(({ camera }, dt) => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const fov = (cam.fov * Math.PI) / 180, dist = camera.position.z + 16;
+    const visH = 2 * dist * Math.tan(fov / 2), visW = visH * cam.aspect;
+    mesh.current.scale.setScalar(Math.min(visW, visH) * (1 + (still() ? 0 : 0.08 * (born.current ? Math.max(0, 1 - (performance.now() - born.current) / 900) : 1))));
+    mesh.current.position.x = still() ? 0 : mesh.current.position.x + (signal.mx * 0.35 - mesh.current.position.x) * Math.min(1, dt * 3);
+    const fade = 1 - THREE.MathUtils.smoothstep(signal.progress, 0.22, 0.6);
+    artState.t = fade;
+    mat.current.opacity = fade;
+  });
+  return (
+    <mesh ref={mesh} position={[0, 0.45, -16]}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial ref={mat} map={tex} map-colorSpace="srgb" transparent depthWrite={false} fog={false} toneMapped={false} />
+    </mesh>
+  );
+}
 
 function Wordmark() {
   const font = useLoader(FontLoader, "/fonts/helvetiker_bold.typeface.json");
@@ -104,7 +140,7 @@ function MoonRoad() {
     return new THREE.CanvasTexture(c);
   }, []);
   const mat = useRef<THREE.MeshBasicMaterial>(null!);
-  useFrame(({ clock }) => { mat.current.opacity = 0.6 + Math.sin(clock.elapsedTime * 2.3) * 0.12 + signal.level * 0.35; });
+  useFrame(({ clock }) => { mat.current.opacity = (0.6 + Math.sin(clock.elapsedTime * 2.3) * 0.12 + signal.level * 0.35) * (1 - artState.t); }); // hidden while the artwork is up
   return (
     <mesh rotation-x={-Math.PI / 2} position={[0, -1.39, -7.6]}>
       <planeGeometry args={[2.6, 13]} />
@@ -133,6 +169,30 @@ function Effects() {
       <Bloom mipmapBlur radius={narrow ? 0.4 : 0.55} luminanceThreshold={0.9} intensity={narrow ? 0.35 : 0.7} />
       <Vignette darkness={0.6} offset={0.3} />
     </EffectComposer>
+  );
+}
+
+// The moon and its dust stay hidden while the artwork is up; they surface as it dissolves.
+function SeaDust() {
+  const g = useRef<THREE.Group>(null!);
+  useFrame(() => { g.current.visible = artState.t < 0.4; });
+  return (
+    <group ref={g}>
+      <Sparkles count={50} scale={[8, 2.2, 1.5]} position={[0, 1.3, 0.4]} size={3} speed={0.35} color="#ffffff" />
+      <Sparkles count={140} scale={[16, 5, 10]} position={[0, -4, 0]} size={2.2} speed={0.6} opacity={0.6} color="#cfcfcf" />
+    </group>
+  );
+}
+
+// The moon's disc on the horizon, dimmed to nothing while the artwork is on screen.
+function MoonGlow() {
+  const mat = useRef<THREE.MeshBasicMaterial>(null!);
+  useFrame(() => { mat.current.opacity = 1 - artState.t; });
+  return (
+    <mesh position={[0, -0.95, -14]}>
+      <circleGeometry args={[0.42, 64]} />
+      <meshBasicMaterial ref={mat} color={[1.6, 1.6, 1.6]} toneMapped={false} fog={false} transparent />
+    </mesh>
   );
 }
 
@@ -166,6 +226,7 @@ export default function Scene() {
         <color attach="background" args={["#000000"]} />
         <fogExp2 attach="fog" args={["#000000", 0.03]} />
         <Suspense fallback={null}>
+          <HeroArt />
           <Wordmark />
           <Environment resolution={256}>
             <Lightformer form="rect" intensity={4} color="#eef0ff" position={[0, 5, -6]} scale={[12, 2, 1]} />
@@ -180,12 +241,8 @@ export default function Scene() {
         </mesh>
         <MoonRoad />
         <Underside />
-        <Sparkles count={50} scale={[8, 2.2, 1.5]} position={[0, 1.3, 0.4]} size={3} speed={0.35} color="#ffffff" />
-        <Sparkles count={140} scale={[16, 5, 10]} position={[0, -4, 0]} size={2.2} speed={0.6} opacity={0.6} color="#cfcfcf" />
-        <mesh position={[0, -0.95, -14]}>
-          <circleGeometry args={[0.42, 64]} />
-          <meshBasicMaterial color={[1.6, 1.6, 1.6]} toneMapped={false} fog={false} />
-        </mesh>
+        <SeaDust />
+        <MoonGlow />
         <Rig />
         <Effects />
       </Canvas>
