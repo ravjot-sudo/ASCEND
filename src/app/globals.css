@@ -24,25 +24,48 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 .dots { background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.06) 1px, transparent 0); background-size: 6px 6px; }
 .micro { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .note { font-weight: 700; font-size: clamp(28px, 3.6vw, 60px); line-height: 1.04; letter-spacing: -0.028em; }
-.note span { opacity: clamp(0.22, calc(var(--p, 0) * var(--n) * 1.2 - var(--i)), 1); transition: opacity 0.25s linear; }
 
-.gate::before { content: ""; position: absolute; inset: -1px; border: 1px solid var(--glint); animation: ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
-@keyframes ripple { from { transform: scale(1); opacity: 0.5; } to { transform: scale(1.35); opacity: 0; } }
 .chrome { background: linear-gradient(180deg, #fff 0%, #a9a9a9 46%, #f4f4f4 54%, #5f5f5f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
+/* Line reveal (Lines.tsx). First line indents by whole grid columns (12-col grid, 1.25rem gaps). */
+.indent-cols { --indent: calc((100% + 1.25rem) * 4 / 12); }
+@media (min-width: 768px) { .indent-cols { --indent: calc((100% + 1.25rem) * 5 / 12); } }
+.lines:not(.is-split).indent-cols { text-indent: var(--indent); }
+.lines .line-mask { display: block; overflow: clip; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.lines .line { display: block; transform: translateY(105%); transition: transform 1.75s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0s) + var(--l, 0) * 0.1s); }
+.lines.is-shown .line { transform: none; }
+
 /* Player disc: silver sheen stays put (like light on a real disc) while the label spins. */
-.disc { position: relative; width: min(52vw, 190px); aspect-ratio: 1; border-radius: 9999px;
+.disc { position: relative; display: block; width: var(--disc, min(52vw, 190px)); aspect-ratio: 1; border-radius: 9999px;
   background: repeating-radial-gradient(circle, rgb(0 0 0 / 0.08) 0 1px, transparent 1px 3px),
     conic-gradient(from 30deg, #5e5e5e, #f4f4f4 11%, #8c8c8c 24%, #dcdcdc 37%, #555 50%, #f0f0f0 61%, #7a7a7a 74%, #e2e2e2 87%, #5e5e5e);
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18), 0 24px 60px -24px rgb(255 255 255 / 0.3); }
 .disc-spin { position: absolute; inset: 0; border-radius: 9999px; display: grid; place-items: center; animation: spin 3.6s linear infinite;
   background: radial-gradient(circle, #111 0 3.5%, #000 4% 31%, rgb(255 255 255 / 0.25) 31.5%, transparent 32.5%); }
-.disc-spin span { transform: translateY(-15px); font: 700 9px/1 var(--font-sans), sans-serif; letter-spacing: -0.02em; color: #fff; }
+.disc-spin span { transform: translateY(var(--disc-label-y, -15px)); font: 700 var(--disc-label, 9px)/1 var(--font-sans), sans-serif; letter-spacing: -0.02em; color: #fff; }
 .disc-spin.paused { animation-play-state: paused; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Gate: the record sleeve with the CD peeking out. Disc translates are % of the disc box. */
+.grain { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E"); }
+.cover-wrap { display: flex; flex-direction: column; align-items: center; gap: clamp(20px, 3.2vh, 36px); outline: none; }
+.cover-box { position: relative; display: block; width: min(44vw, 56svh, 600px); aspect-ratio: 1; transform: translateX(-7%); transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.cover { position: absolute; inset: 0; z-index: 1; display: block; overflow: hidden; border-radius: 4px; background: #050505;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08), 30px 0 60px -20px rgb(0 0 0 / 0.9); }
+.cover-disc { position: absolute; inset: 3%; z-index: 0; display: block; --disc: 100%; --disc-label: clamp(10px, 1.4vw, 18px); --disc-label-y: clamp(-34px, -2.6vw, -16px);
+  transform: translateX(16%); transition: transform 1s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.cover-disc .disc-spin { animation-duration: 6s; }
+.cover-wrap:hover .cover-disc, .cover-wrap:focus-visible .cover-disc { transform: translateX(30%); }
+.cover-wrap:focus-visible .cover { outline: 2px solid var(--glint); outline-offset: 4px; }
+.cover-wrap.is-entering .cover-disc { transform: translateX(62%); }
+.cover-wrap.is-entering .cover-disc .disc-spin { animation-duration: 0.8s; }
+.cover-wrap.is-entering .cover-box { transform: translateX(-20%) scale(0.97); }
+.twinkle { animation: twinkle 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; opacity: 0.2; }
+@keyframes twinkle { 0%, 100% { opacity: 0.15; } 45% { opacity: 1; } }
+@media (max-width: 640px) { .cover-box { width: min(72vw, 52svh); } }
+
 @media (prefers-reduced-motion: reduce) {
+  .twinkle { animation: none; opacity: 0.8; }
+  .cover-disc, .cover-box { transition: none; }
   .disc-spin { animation: none; }
-  .note span { opacity: 1; transition: none; }
-  .gate::before { animation: none; }
 }

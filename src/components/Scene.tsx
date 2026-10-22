@@ -2,8 +2,8 @@
 // Persistent WebGL layer (P2): sagging chrome wordmark (P30) over a reflective sea; scroll sinks the camera under (P3).
 import * as THREE from "three";
 import { Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { Environment, Lightformer, MeshReflectorMaterial, Sparkles } from "@react-three/drei";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Environment, Lightformer, Sparkles } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
@@ -11,7 +11,8 @@ import { signal } from "@/lib/signal";
 
 const ABOVE = new THREE.Color("#000000"), BELOW = new THREE.Color("#030303");
 const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-const webgl = () => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { return false; } };
+let gl: boolean | undefined; // probe once: useSyncExternalStore calls getSnapshot on every render
+const webgl = () => (gl ??= (() => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { return false; } })());
 const noop = () => () => {};
 
 function Wordmark() {
@@ -66,6 +67,58 @@ function Glints() {
   ));
 }
 
+// The moon's light path on the water: a baked falloff of broken horizontal glitter, additive, pulsing with the music.
+// Seeded PRNG (mulberry32): the glitter pattern is the same on every render and every visit.
+const seeded = (a: number) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+
+function MoonRoad() {
+  const tex = useMemo(() => {
+    const rnd = seeded(7), w = 64, h = 512, c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d")!, img = g.createImageData(w, h);
+    for (let y = 0; y < h; y++) {
+      const v = y / (h - 1), row = rnd() > 0.45 ? 1 : 0.12; // v: 0 under the moon, 1 toward the viewer
+      for (let x = 0; x < w; x++) {
+        const u = (x / (w - 1)) * 2 - 1, spread = 0.2 + v * 0.8;
+        const a = Math.min(1, Math.exp(-((u / spread) ** 2) * 5) * (1 - v) ** 1.6 * row * (0.7 + rnd() * 0.3) * 1.5);
+        const i = (y * w + x) * 4; img.data[i] = img.data[i + 1] = img.data[i + 2] = 255; img.data[i + 3] = a * 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    return new THREE.CanvasTexture(c);
+  }, []);
+  const mat = useRef<THREE.MeshBasicMaterial>(null!);
+  useFrame(({ clock }) => { mat.current.opacity = 0.6 + Math.sin(clock.elapsedTime * 2.3) * 0.12 + signal.level * 0.35; });
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[0, -1.39, -7.6]}>
+      <planeGeometry args={[2.6, 13]} />
+      <meshBasicMaterial ref={mat} map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+    </mesh>
+  );
+}
+
+// The surface seen from below; only drawn once the camera is under the water.
+function Underside() {
+  const m = useRef<THREE.Mesh>(null!);
+  useFrame(({ camera }) => { m.current.visible = camera.position.y < -1.41; });
+  return (
+    <mesh ref={m} rotation-x={Math.PI / 2} position-y={-1.41}>
+      <planeGeometry args={[80, 80]} />
+      <meshBasicMaterial color="#3a3a3e" transparent opacity={0.1} />
+    </mesh>
+  );
+}
+
+// Narrow screens push the camera back, so the same bloom covers more of the frame: tone it down there.
+function Effects() {
+  const narrow = useThree((s) => s.size.width < 640);
+  return (
+    <EffectComposer multisampling={0}>
+      <Bloom mipmapBlur radius={narrow ? 0.4 : 0.55} luminanceThreshold={0.9} intensity={narrow ? 0.35 : 0.7} />
+      <Vignette darkness={0.6} offset={0.3} />
+    </EffectComposer>
+  );
+}
+
 function Rig() {
   useFrame(({ camera, scene }, dt) => {
     const p = signal.progress, under = THREE.MathUtils.smoothstep(p, 0.35, 0.65);
@@ -91,7 +144,7 @@ export default function Scene() {
     return <div aria-hidden className="fixed inset-0 -z-10 grid place-items-center bg-[radial-gradient(60%_50%_at_50%_45%,#1c1c1c,#000000)] text-[14vw] font-bold tracking-tighter text-fg/80">UNDERTOW</div>;
   if (!ok) return null;
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10" style={{ opacity: "var(--scene, 1)" }}>
       <Canvas dpr={[1, 1.75]} camera={{ position: [0, 0.9, 10.5], fov: 35 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
         <color attach="background" args={["#000000"]} />
         <fogExp2 attach="fog" args={["#000000", 0.03]} />
@@ -106,12 +159,10 @@ export default function Scene() {
         </Suspense>
         <mesh rotation-x={-Math.PI / 2} position-y={-1.4}>
           <planeGeometry args={[80, 80]} />
-          <MeshReflectorMaterial blur={[300, 80]} resolution={512} mixBlur={1} mixStrength={14} mixContrast={1.3} roughness={1} depthScale={1.1} minDepthThreshold={0.4} maxDepthThreshold={1.4} color="#000000" metalness={0.2} />
+          <meshBasicMaterial color="#000000" />
         </mesh>
-        <mesh rotation-x={Math.PI / 2} position-y={-1.41}>
-          <planeGeometry args={[80, 80]} />
-          <meshBasicMaterial color="#3a3a3e" transparent opacity={0.1} />
-        </mesh>
+        <MoonRoad />
+        <Underside />
         <Sparkles count={50} scale={[8, 2.2, 1.5]} position={[0, 1.3, 0.4]} size={3} speed={0.35} color="#ffffff" />
         <Sparkles count={140} scale={[16, 5, 10]} position={[0, -4, 0]} size={2.2} speed={0.6} opacity={0.6} color="#cfcfcf" />
         <mesh position={[0, -0.95, -14]}>
@@ -119,10 +170,7 @@ export default function Scene() {
           <meshBasicMaterial color={[1.6, 1.6, 1.6]} toneMapped={false} fog={false} />
         </mesh>
         <Rig />
-        <EffectComposer multisampling={0}>
-          <Bloom mipmapBlur radius={0.55} luminanceThreshold={0.9} intensity={0.7} />
-          <Vignette darkness={0.6} offset={0.3} />
-        </EffectComposer>
+        <Effects />
       </Canvas>
     </div>
   );

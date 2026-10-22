@@ -1,35 +1,60 @@
 "use client";
 import Lenis from "lenis";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { TRACKS, audioStore, elapsed, nextTrack, pause, playTrack, prevTrack, readWave, toggle } from "@/lib/audio";
 import { signal } from "@/lib/signal";
+import { Cover } from "./Cover";
+import { Lines } from "./Lines";
 
 const useAudio = () => useSyncExternalStore(audioStore.subscribe, audioStore.get, audioStore.get);
 
 export function SmoothScroll() {
   useEffect(() => {
+    history.scrollRestoration = "manual"; scrollTo(0, 0);
     const lenis = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : new Lenis({ autoRaf: true, lerp: 0.09 });
-    const on = () => { signal.progress = Math.min(1, scrollY / (innerHeight * 1.6)); };
+    const root = document.documentElement;
+    const on = () => {
+      signal.progress = Math.min(1, scrollY / (innerHeight * 1.6));
+      // past the descent the scene becomes a faint backdrop so the reading sections stay legible
+      root.style.setProperty("--scene", String(Math.max(0.14, Math.min(1, 1 - (scrollY - innerHeight * 1.7) / (innerHeight * 0.7)))));
+    };
     on(); addEventListener("scroll", on, { passive: true });
     return () => { removeEventListener("scroll", on); lenis?.destroy(); };
   }, []);
   return null;
 }
 
-// P29: one click unlocks WebAudio and lifts the curtain. Silent entry is always offered.
+// P29: one click unlocks WebAudio and lifts the curtain. The cover is the gate: the CD slides out of the
+// sleeve on hover and all the way on click, then the curtain fades. Silent entry is always offered.
+type GateState = "open" | "entering" | "fading" | "gone";
 export function Gate() {
-  const [state, setState] = useState<"open" | "fading" | "gone">("open");
-  const enter = (sound: boolean) => { if (sound) playTrack(0); setState("fading"); setTimeout(() => setState("gone"), 700); };
+  const [state, setState] = useState<GateState>("open");
+  const enter = (sound: boolean) => {
+    if (state !== "open") return;
+    if (sound) playTrack(0);
+    const quick = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setState(quick ? "fading" : "entering");
+    setTimeout(() => setState("fading"), quick ? 0 : 750);
+    setTimeout(() => setState("gone"), quick ? 300 : 1450);
+  };
+  useEffect(() => {
+    if (state === "gone") return;
+    const h = document.documentElement; h.style.overflow = "hidden";
+    return () => { h.style.overflow = ""; };
+  }, [state]);
   if (state === "gone") return null;
   return (
-    <div role="dialog" aria-modal aria-label="Enter Undertow" data-lenis-prevent className={`fixed inset-0 z-50 grid place-items-center bg-ink dots transition-opacity duration-700 ${state === "fading" ? "opacity-0" : ""}`}>
+    <div role="dialog" aria-modal aria-label="Enter Undertow" data-lenis-prevent className={`grain fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black transition-opacity duration-700 ${state === "fading" ? "opacity-0" : ""}`}>
       <div className="flex flex-col items-center gap-5 px-6 text-center">
-        <button autoFocus onClick={() => enter(true)} aria-label="Click to enter, sound on" className="gate group relative grid size-32 place-items-center overflow-hidden border border-line bg-[#0b0b0b] transition-colors hover:border-fg">
-          <span className="chrome -mt-5 text-[17px] font-bold tracking-tighter">UNDERTOW</span>
-          <span aria-hidden className="absolute bottom-[34px] left-1/2 size-3 -translate-x-1/2 rounded-full bg-white shadow-[0_0_14px_4px_rgba(255,255,255,.55)] transition-transform duration-500 group-hover:scale-125" />
-          <span aria-hidden className="absolute inset-x-4 bottom-[28px] h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+        <button autoFocus onClick={() => enter(true)} aria-label="Click to enter, sound on" className={`cover-wrap group ${state !== "open" ? "is-entering" : ""}`}>
+          <span className="cover-box">
+            <span className="cover-disc" aria-hidden>
+              <span className="disc"><span className="disc-spin"><span>UNDERTOW</span></span></span>
+            </span>
+            <Cover />
+          </span>
+          <span className="text-[clamp(24px,2.6vw,36px)] font-semibold tracking-tight text-[#8a8a8a] transition-colors group-hover:text-fg group-focus-visible:text-fg">Click to enter</span>
         </button>
-        <p className="micro text-fg">Click to enter</p>
         <button onClick={() => enter(false)} className="micro text-mute underline-offset-4 hover:text-fg hover:underline">or enter in silence</button>
       </div>
       <p className="micro absolute bottom-5 left-1/2 w-max -translate-x-1/2 text-mute">Headphones help · every note is generated live</p>
@@ -80,7 +105,7 @@ export function Player() {
           <ol className="grid grid-cols-2 gap-px border border-line bg-line">
             {TRACKS.map((x, i) => (
               <li key={x.title} className="bg-black">
-                <button onClick={() => playTrack(i)} aria-current={s.index === i} className={`flex w-full items-center gap-2 p-2 text-left hover:text-glint ${s.index === i ? "text-fg" : "text-mute"}`}>
+                <button onClick={() => playTrack(i)} aria-current={s.index === i} className={`flex w-full items-center gap-2 p-2 text-left transition-colors hover:bg-white/5 hover:text-fg ${s.index === i ? "text-fg" : "text-mute"}`}>
                   <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${s.index === i && s.playing ? "bg-glint" : "bg-line"}`} />
                   <span className="truncate">{x.title}</span><span className="text-mute">{x.side}</span>
                 </button>
@@ -93,14 +118,14 @@ export function Player() {
           <div className="flex justify-between gap-2 text-mute"><span className="truncate text-fg">Tidewell · {t.title}</span><span ref={time}>00:00</span><span>BPM {t.bpm}</span></div>
           <canvas ref={wave} width={600} height={64} aria-hidden className="mt-2 h-8 w-full" />
           <div className="mt-2 grid grid-cols-3 gap-px border border-line bg-line">
-            <button onClick={prevTrack} aria-label="Previous track" className="bg-black py-2.5 hover:text-glint"><Icon d="M2 1h1.6v10H2zM10 1v10L4 6z" /></button>
-            <button onClick={toggle} aria-label={s.playing ? "Pause" : "Play"} className="bg-black py-2.5 hover:text-glint"><Icon d={s.playing ? "M2.5 1h2.5v10H2.5zM7 1h2.5v10H7z" : "M3 1v10l8-5z"} /></button>
-            <button onClick={nextTrack} aria-label="Next track" className="bg-black py-2.5 hover:text-glint"><Icon d="M8.4 1H10v10H8.4zM2 1v10l6-5z" /></button>
+            <button onClick={prevTrack} aria-label="Previous track" className="bg-black py-2.5 transition-colors hover:bg-white/10"><Icon d="M2 1h1.6v10H2zM10 1v10L4 6z" /></button>
+            <button onClick={toggle} aria-label={s.playing ? "Pause" : "Play"} className="bg-black py-2.5 transition-colors hover:bg-white/10"><Icon d={s.playing ? "M2.5 1h2.5v10H2.5zM7 1h2.5v10H7z" : "M3 1v10l8-5z"} /></button>
+            <button onClick={nextTrack} aria-label="Next track" className="bg-black py-2.5 transition-colors hover:bg-white/10"><Icon d="M8.4 1H10v10H8.4zM2 1v10l6-5z" /></button>
           </div>
         </div>
       )}
       <div className="micro fixed inset-x-3 bottom-3 z-40 flex items-center gap-3 rounded-full border border-line bg-black/70 py-1.5 pr-1.5 pl-1.5 backdrop-blur-md sm:inset-x-auto sm:right-5 sm:bottom-5">
-        <button onClick={toggle} aria-pressed={s.playing} aria-label={s.playing ? "Pause" : "Play"} className="grid size-7 shrink-0 place-items-center rounded-full bg-fg text-ink hover:bg-glint">
+        <button onClick={toggle} aria-pressed={s.playing} aria-label={s.playing ? "Pause" : "Play"} className="grid size-7 shrink-0 place-items-center rounded-full bg-fg text-ink transition-opacity hover:opacity-75">
           <Icon d={s.playing ? "M2.5 1h2.5v10H2.5zM7 1h2.5v10H7z" : "M3 1v10l8-5z"} />
         </button>
         <span aria-live="polite" className="min-w-0 flex-1 truncate">{t.side} · {t.title}</span>
@@ -111,41 +136,11 @@ export function Player() {
   );
 }
 
-// P31: sleeve notes; words lift as the paragraph crosses the viewport (opacity maths lives in CSS).
-export function Notes({ items }: { items: { mark: string; text: string }[] }) {
-  const root = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const ps = [...root.current!.querySelectorAll<HTMLElement>("[data-p]")];
-    let r = 0;
-    const f = () => {
-      const vh = innerHeight;
-      for (const p of ps) { const b = p.getBoundingClientRect(); p.style.setProperty("--p", String(Math.max(0, Math.min(1, (vh * 0.9 - b.top) / (b.height + vh * 0.3))))); }
-      r = requestAnimationFrame(f);
-    };
-    f(); return () => cancelAnimationFrame(r);
-  }, []);
-  return (
-    <div ref={root} className="space-y-[10vh]">
-      {items.map((it) => {
-        const words = it.text.split(" ");
-        return (
-          <div key={it.mark} className="grid grid-cols-12 gap-x-5">
-            <span className="micro col-span-12 pb-3 text-mute md:col-span-2 md:col-start-2 md:pt-4">{it.mark}</span>
-            <p data-p style={{ "--n": words.length } as CSSProperties} className="note col-span-12 md:col-span-9">
-              {words.map((w, j) => <span key={j} style={{ "--i": j } as CSSProperties}>{w} </span>)}
-            </p>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function Tracklist() {
   const s = useAudio();
   return (
     <div className="grid grid-cols-12 gap-x-5">
-      <h2 className="micro col-span-12 pb-6 text-mute md:col-span-2 md:col-start-2">● Tracklist</h2>
+      <h2 className="micro col-span-12 pb-6 text-mute md:col-span-2 md:col-start-2"><Lines as="span" text="● Tracklist" /></h2>
       <ol className="col-span-12 grid gap-x-10 md:col-span-9 md:grid-cols-2">
         {TRACKS.map((t, i) => {
           const on = s.playing && s.index === i;
@@ -154,9 +149,9 @@ export function Tracklist() {
               <button onClick={() => (on ? pause() : playTrack(i))} aria-pressed={on} className="group flex w-full items-baseline justify-between gap-4 py-5 text-left">
                 <span className="flex items-baseline gap-4">
                   <span className="micro w-8 text-mute">{t.side}</span>
-                  <span className={`text-3xl font-bold tracking-tight transition-colors md:text-5xl ${on ? "text-glint" : "group-hover:text-glint"}`}>{t.title}</span>
+                  <span className={`text-3xl font-bold tracking-tight transition-colors md:text-5xl ${on ? "text-fg" : "text-fg/50 group-hover:text-fg"}`}>{t.title}</span>
                 </span>
-                <span className="micro shrink-0 text-mute">{on ? "Playing" : `${t.bpm} bpm · ${t.key}`}</span>
+                <span className={`micro shrink-0 ${on ? "text-fg" : "text-mute"}`}>{on ? "● Playing" : `${t.bpm} bpm · ${t.key}`}</span>
               </button>
             </li>
           );

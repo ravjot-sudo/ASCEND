@@ -1,13 +1,15 @@
 # Undertow video panel footage: moonlight glitter on open water, black and silver. Our own scene, rendered headless.
 # Run: "/Applications/Blender.app/Contents/MacOS/Blender" --background --python art/moon_sea.py -- <out_dir>
 import bpy, math, sys, os
-out = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "art/_frames"
+args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+out = args[0] if args else "art/_frames"
+close = len(args) > 1 and args[1] == "close"  # second panel: taller frame, camera low over the glitter
 os.makedirs(out, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
 eng = [e for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items.keys() if "EEVEE" in e][0]
 sc.render.engine = eng
-sc.render.resolution_x, sc.render.resolution_y, sc.render.resolution_percentage = 540, 720, 100
+sc.render.resolution_x, sc.render.resolution_y, sc.render.resolution_percentage = (540, 836, 100) if close else (540, 720, 100)
 sc.render.fps, sc.frame_start, sc.frame_end = 24, 1, 144
 sc.render.image_settings.file_format = "PNG"
 sc.render.filepath = os.path.join(out, "f_")
@@ -31,7 +33,7 @@ bpy.ops.mesh.primitive_plane_add(size=2)
 sea = bpy.context.object
 oc = sea.modifiers.new("ocean", "OCEAN")
 oc.geometry_mode = "GENERATE"; oc.resolution = 14; oc.spatial_size = 60; oc.repeat_x = oc.repeat_y = 3
-oc.wave_scale = 0.5; oc.choppiness = 1.2; oc.wind_velocity = 9; oc.wave_alignment = 0.4; oc.random_seed = 7
+oc.wave_scale = 0.5; oc.choppiness = 1.2; oc.wind_velocity = 9; oc.wave_alignment = 0.4; oc.random_seed = 11 if close else 7
 oc.time = 0; oc.keyframe_insert("time", frame=1); oc.time = 6; oc.keyframe_insert("time", frame=145)
 for fc in (sea.animation_data.action.fcurves if hasattr(sea.animation_data.action, "fcurves") else []):
     for kp in fc.keyframe_points: kp.interpolation = "LINEAR"
@@ -60,7 +62,7 @@ bpy.ops.object.light_add(type="SUN", location=(0, 0, 10))
 sun = bpy.context.object; sun.data.energy = 6; sun.data.angle = math.radians(0.6)
 sun.rotation_euler = (math.radians(-86), 0, 0)  # points back toward the camera from just above the horizon
 
-bpy.ops.object.camera_add(location=(0, -6, 2.1), rotation=(math.radians(86.5), 0, 0))
-cam = bpy.context.object; cam.data.lens = 42; sc.camera = cam
+bpy.ops.object.camera_add(location=(0, -3, 0.75) if close else (0, -6, 2.1), rotation=(math.radians(84 if close else 86.5), 0, 0))
+cam = bpy.context.object; cam.data.lens = 58 if close else 42; sc.camera = cam
 bpy.ops.render.render(animation=True)
 print("RENDER_DONE", out)

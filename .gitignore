@@ -40,3 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 art/_frames/
+art/_frames2/
+art/_render*.log
