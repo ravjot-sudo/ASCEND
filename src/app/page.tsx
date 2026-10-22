@@ -98,10 +98,10 @@ export default function Home() {
         </CueSection>
 
         <section aria-label="Film" className="site mt-var t-body text-mute" style={mt(110, 195)}>
-          <MediaPanel still="/media/moon-sea.webp" video="/media/moon-sea.mp4" label="Moonlight on open water, a rendered loop" className="col-span-4 aspect-[484/645] s:col-start-7" />
+          <MediaPanel still="/media/ascend-film.jpg" video="/media/ascend-film.mp4" label="Live set from the rooftop, looping footage" className="col-span-4 aspect-[484/645] s:col-start-7" />
           <div className="col-span-2 col-start-11 hidden s:block" style={{ lineHeight: U(20) }}>
             <Lines as="span" className="block" text="● ASCEND" />
-            <Lines as="span" className="block" text="Open water (rendered)" />
+            <Lines as="span" className="block" text="Live from the set (on loop)" />
           </div>
         </section>
 
