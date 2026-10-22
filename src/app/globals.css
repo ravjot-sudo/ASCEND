@@ -103,6 +103,12 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
   -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent), linear-gradient(to bottom, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent);
   mask-image: linear-gradient(to right, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent), linear-gradient(to bottom, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent);
   -webkit-mask-composite: source-in; mask-composite: intersect; }
+/* The picture sits zoomed out inside that box (76%, like the reference's wider shot): the door's top stays put
+   (25.4% down the photo) and the photo's own edges melt into the background, the steps fading away at the bottom. */
+.stairs-photo { position: absolute; left: 12%; top: 6.1%; width: 76%; height: 76%; object-fit: cover;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent), linear-gradient(to bottom, transparent, #000 8%, #000 78%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent), linear-gradient(to bottom, transparent, #000 8%, #000 78%, transparent);
+  -webkit-mask-composite: source-in; mask-composite: intersect; }
 /* The page grain sits behind the content, so the photo carries the same grain on top, pinned to the viewport
    (background-attachment: fixed) so its pattern lines up with the page's exactly: no visible box. */
 .stairs::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: url(/media/grain.png), url(/media/grain.png); background-position: 0 0, 74px 106px; background-attachment: fixed; opacity: 0.175; }

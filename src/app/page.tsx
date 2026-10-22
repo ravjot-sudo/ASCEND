@@ -63,7 +63,7 @@ export default function Home() {
             </div>
             <div className="stairs relative -mx-[40%] w-[180%] aspect-[1260/825] -mt-[52.5svh] s:mx-auto s:w-[84%] s:-mt-[33.6svh]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/media/ascend-stairs.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+              <img src="/media/ascend-stairs.jpg" alt="" className="stairs-photo" />
             </div>
           </div>
           <h1 className="sr-only">Tidewell, ASCEND EP</h1>
