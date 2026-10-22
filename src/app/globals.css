@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #071113;
+  --fg: #e6f0ef;
+  --mute: #7f9694;
+  --line: rgb(230 240 239 / 0.14);
+  --glint: #9ff3ff;
+}
+@theme inline {
+  --color-ink: var(--ink);
+  --color-fg: var(--fg);
+  --color-mute: var(--mute);
+  --color-line: var(--line);
+  --color-glint: var(--glint);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+html { background: var(--ink); color: var(--fg); color-scheme: dark; }
+body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--glint); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
+
+.dots { background-image: radial-gradient(circle at 1px 1px, rgb(230 240 239 / 0.07) 1px, transparent 0); background-size: 6px 6px; }
+.micro { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.note { font-weight: 700; font-size: clamp(28px, 3.6vw, 60px); line-height: 1.04; letter-spacing: -0.028em; }
+.note span { opacity: clamp(0.22, calc(var(--p, 0) * var(--n) * 1.2 - var(--i)), 1); transition: opacity 0.25s linear; }
+
+.gate::before { content: ""; position: absolute; inset: -1px; border-radius: 9999px; border: 1px solid var(--glint); animation: ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+@keyframes ripple { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.7); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .note span { opacity: 1; transition: none; }
+  .gate::before { animation: none; }
+}

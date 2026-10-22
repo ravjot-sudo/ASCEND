@@ -1,0 +1,15 @@
+# Tidewell: UNDERTOW (concept EP release site)
+- **Class of site:** a music-release microsite, after ascension.pegassi.be (library: `sites/ascension.pegassi.be.md`).
+- **Borrowed mechanisms:**
+  - audio gate (P29)
+  - arched extruded chrome wordmark (P30)
+  - scroll-driven camera move (P3)
+  - sleeve-note editorial on a dot grid (P31)
+  - Lenis (P1)
+- **Ours, deliberately different:**
+  - **Story:** descent under water instead of an ascent to a door.
+  - **Wordmark:** sags like a wave trough over a reflective sea, and the camera sinks below the surface.
+  - **Palette:** ink-teal with a cold cyan glint. Type is Geist + Geist Mono.
+  - **Music:** generated live with WebAudio (no files), and the analyser drives the scene.
+  - **Content:** a tide table instead of live photos. The artist, title, copy and tracks are fictional.
+- **Assets:** helvetiker_bold typeface JSON (MgOpen licence, `public/fonts/LICENSE-MgOpen.txt`). Everything else is code.
