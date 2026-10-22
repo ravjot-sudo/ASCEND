@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Tidewell, Undertow EP",
   description: "Undertow, the debut EP from Tidewell: the record streams live in your browser. A concept release site.",
 };
-export const viewport: Viewport = { themeColor: "#000000" };
+export const viewport: Viewport = { themeColor: "#040405" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #000000;
+  --ink: #040405; /* the artwork's background, so the photo's feathered edges melt into the page */
   --fg: #ffffff;
   --mute: #7d7d7d;
   --line: rgb(255 255 255 / 0.14);
@@ -98,6 +98,18 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 .lines .line { display: block; transform: translateY(105%); transition: transform 1.75s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0s) + var(--l, 0) * 0.1s); }
 .lines.is-shown .line { transform: none; }
 
+/* Hero photo: 14rem (140u) feathered edges on all sides (reference mask), intersected. */
+.stairs { --feather: calc(var(--u) * 140);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent), linear-gradient(to bottom, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent), linear-gradient(to bottom, transparent, #000 var(--feather), #000 calc(100% - var(--feather)), transparent);
+  -webkit-mask-composite: source-in; mask-composite: intersect; }
+/* The page grain sits behind the content, so the photo carries the same grain on top, pinned to the viewport
+   (background-attachment: fixed) so its pattern lines up with the page's exactly: no visible box. */
+.stairs::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: url(/media/grain.png), url(/media/grain.png); background-position: 0 0, 74px 106px; background-attachment: fixed; opacity: 0.175; }
+/* Hero word: soft white bloom around the chrome (drop shadows follow the rendered letters, not the box). It sits on
+   the canvas wrapper, not the <canvas>: the wrapper clips its children, so a filter on the canvas would be cut square. */
+.hero-canvas { filter: drop-shadow(0 0 calc(var(--u) * 16) rgb(235 238 255 / 0.55)) drop-shadow(0 0 calc(var(--u) * 70) rgb(235 238 255 / 0.28)); }
+
 /* Sequencer page (measured reference layout on desktop; phones stack the panels and scroll the step grid sideways). */
 .seq { min-height: 100svh; padding-top: calc(var(--u) * 250); }
 .seq-top { display: grid; row-gap: calc(var(--u) * 10); }
@@ -122,7 +134,7 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Gate: the record sleeve with the CD peeking out. Disc translates are % of the disc box. */
-.grain { background-color: #000; }
+.grain { background-color: var(--ink); }
 .grain::before, .grain-layer::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: url(/media/grain.png), url(/media/grain.png); background-position: 0 0, 74px 106px; opacity: 0.175; } /* reference: two offset layers of a 200px speck tile at .175 */
 .cover-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; outline: none; }
 /* Sleeve: 240u, like the reference's w-240 (230px at 1440, ~233px on a 390px phone). */

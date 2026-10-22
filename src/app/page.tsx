@@ -5,6 +5,7 @@ import { MediaPanel } from "@/components/MediaPanel";
 import { CuePreview, CueSection } from "@/components/Cue";
 import { Gate, Player, SmoothScroll } from "@/components/ui";
 import { SiteHeader, Slide } from "@/components/SiteHeader";
+import { HeroWord } from "@/components/HeroWord";
 
 // u = the reference's 0.1rem (viewport-scaled, see globals.css). Spacing below is the measured reference rhythm.
 const U = (n: number) => `calc(var(--u) * ${n})`;
@@ -52,7 +53,18 @@ export default function Home() {
       <SiteHeader />
 
       <main id="top">
-        <section className="hero relative">
+        <section className="hero relative min-h-svh overflow-x-clip s:overflow-visible">
+          {/* Reference layout: the word box (83% wide, 2496:1173) centred in the first screen, the photo (84% wide,
+              1260:825) pulled up 33.6svh beneath it with 14rem feathered edges, the word drawn above the photo. */}
+          <div className="absolute inset-x-0 top-0 h-svh" style={{ paddingInline: U(10) }}>
+            <div className="flex h-svh flex-col items-center justify-end pb-[48.7svh] s:flex-row s:justify-center s:pb-0">
+              <HeroWord />
+            </div>
+            <div className="stairs relative -mx-[40%] w-[180%] aspect-[1260/825] -mt-[52.5svh] s:mx-auto s:w-[84%] s:-mt-[33.6svh]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/media/ascend-stairs.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+            </div>
+          </div>
           <h1 className="sr-only">Tidewell, Undertow EP</h1>
           <div className="t-body pointer-events-none absolute inset-x-0 top-0 h-svh text-mute">
             <p className="absolute top-1/2 hidden -translate-y-1/2 s:block" style={{ left: U(10) }}><Slide d={5}>EP</Slide></p>

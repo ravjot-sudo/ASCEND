@@ -89,7 +89,7 @@ export function Gate() {
   }, []);
   if (state === "gone") return null;
   return (
-    <div role="dialog" aria-modal aria-label="Enter Undertow" data-lenis-prevent onClick={() => enter(true)} className={`grain fixed inset-0 z-50 grid cursor-pointer place-items-center overflow-hidden bg-black transition-opacity duration-500 ${state === "fading" ? "opacity-0" : ""}`}>
+    <div role="dialog" aria-modal aria-label="Enter Undertow" data-lenis-prevent onClick={() => enter(true)} className={`grain fixed inset-0 z-50 grid cursor-pointer place-items-center overflow-hidden bg-[var(--ink)] transition-opacity duration-500 ${state === "fading" ? "opacity-0" : ""}`}>
       <div className="flex flex-col items-center gap-5 px-6 text-center">
         <button onClick={(e) => { e.stopPropagation(); enter(true); }} aria-label="Click to enter, sound on" className={`cover-wrap group ${state === "loading" ? "" : "is-ready"} ${state === "entering" || state === "fading" ? "is-entering" : ""}`}>
           <span ref={box} className="cover-box">
