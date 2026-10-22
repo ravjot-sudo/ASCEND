@@ -39,12 +39,20 @@ Black, silver, a moon on the water, and four tracks your browser writes live.
     <td><sub><b>02 · Sleeve notes</b>: masked lines rise into place, with the first line indented by grid columns.</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/screens/06-film.webp" alt="Video panel with a rendered moonlit-sea loop and caption" /></td>
+    <td><img src="docs/screens/06-film.webp" alt="Rooftop live set looping in the film panel" /></td>
     <td><img src="docs/screens/08-player.webp" alt="Player panel with the silver disc, spectrum bars and transport" /></td>
   </tr>
   <tr>
     <td><sub><b>03 · Film</b>: a lazy video panel. A cursor chip follows the pointer, and clicking toggles the sound.</sub></td>
     <td><sub><b>04 · Player</b>: tracks, a spinning silver disc, live spectrum bars and transport.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screens/13-cue-hover.webp" alt="Hovering a track mention streams that side's YouTube video in the cue panel" /></td>
+    <td><img src="docs/screens/07-about.webp" alt="About the record, line by line" /></td>
+  </tr>
+  <tr>
+    <td><sub><b>05 · Cue</b>: hover any track's name and that side's actual video streams in. The section dims to frame it.</sub></td>
+    <td><sub><b>06 · About</b>: how the record came to be.</sub></td>
   </tr>
   <tr>
     <td><img src="docs/screens/12-sequencer.webp" alt="Sequencer page: a kit per side of the record on a 16-step grid, with a link to the real streamed track" width="100%" /></td>
