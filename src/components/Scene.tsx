@@ -18,7 +18,7 @@ const noop = () => () => {};
 function Wordmark() {
   const font = useLoader(FontLoader, "/fonts/helvetiker_bold.typeface.json");
   const geo = useMemo(() => {
-    const g = new TextGeometry("UNDERTOW", { font, size: 1, depth: 0.3, curveSegments: 10, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.03, bevelSegments: 5 });
+    const g = new TextGeometry("ASCEND", { font, size: 1, depth: 0.3, curveSegments: 10, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.03, bevelSegments: 5 });
     g.center();
     const p = g.attributes.position, R = 8; // positive radius: the word arches over the moon
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), th = x / R; p.setXY(i, (R + y) * Math.sin(th), (R + y) * Math.cos(th) - R); }
@@ -53,7 +53,7 @@ function Glints() {
     g.quadraticCurveTo(h, h, s, h); g.quadraticCurveTo(h, h, h, s); g.quadraticCurveTo(h, h, 0, h); g.quadraticCurveTo(h, h, h, 0); g.fill();
     return new THREE.CanvasTexture(c);
   }, []);
-  const pts = useMemo(() => [[-3.3, 1], [-1.9, 1], [-0.5, 1], [1.1, 1], [2.4, 1], [3.4, 1], [-2.7, -1], [0.3, -1], [2.9, -1]]
+  const pts = useMemo(() => [[-2.5, 1], [-1.4, 1], [-0.4, 1], [0.8, 1], [1.8, 1], [2.6, 1], [-2, -1], [0.2, -1], [2.2, -1]]
     .map(([x, e], i) => { const r = 8 + 0.4 * e; return { x: r * Math.sin(x / 8), y: r * Math.cos(x / 8) - 8, ph: i * 1.9, s: 0.28 + (i % 3) * 0.08 }; }), []);
   // Long thin diagonal flare through each glint (soft-ended line, rotated ~40°).
   const streak = useMemo(() => {
@@ -158,7 +158,7 @@ export default function Scene() {
     return () => removeEventListener("pointermove", mv);
   }, []);
   if (ok === false)
-    return <div aria-hidden className="fixed inset-0 -z-10 grid place-items-center bg-[radial-gradient(60%_50%_at_50%_45%,#1c1c1c,#000000)] text-[14vw] font-bold tracking-tighter text-fg/80">UNDERTOW</div>;
+    return <div aria-hidden className="fixed inset-0 -z-10 grid place-items-center bg-[radial-gradient(60%_50%_at_50%_45%,#1c1c1c,#000000)] text-[14vw]   font-bold tracking-tighter text-fg/80">ASCEND</div>;
   if (!ok) return null;
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10" style={{ opacity: "var(--scene, 1)" }}>

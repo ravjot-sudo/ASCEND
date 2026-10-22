@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screens/02-cover-hover.webp" alt="The Undertow gate: a record sleeve with a chrome wordmark arched over a moon, the silver CD sliding out" width="100%" />
+<img src="docs/screens/02-cover-hover.webp" alt="The ASCEND gate: the artwork sleeve with the chrome wordmark over the lit doorway, the silver CD sliding out" width="100%" />
 
 <br />
 <br />
@@ -31,7 +31,7 @@ Black, silver, a moon on the water, and four tracks your browser writes live.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screens/03-hero.webp" alt="Hero: arched chrome UNDERTOW wordmark with star glints over the moon and its light path" /></td>
+    <td width="50%"><img src="docs/screens/03-hero.webp" alt="Hero: arched chrome ASCEND wordmark with star glints over the moon and its light path" /></td>
     <td width="50%"><img src="docs/screens/04-notes.webp" alt="Sleeve notes revealing line by line" /></td>
   </tr>
   <tr>
