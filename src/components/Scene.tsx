@@ -1,12 +1,10 @@
 "use client";
-// Persistent WebGL layer (P2): sagging chrome wordmark (P30) over a reflective sea; scroll sinks the camera under (P3).
+// Persistent WebGL layer (P2): the ASCEND artwork (word + scene layers) over a night sea; scroll sinks the camera under (P3).
 import * as THREE from "three";
-import { Suspense, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, Sparkles, useTexture } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
-import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { signal } from "@/lib/signal";
 
 const ABOVE = new THREE.Color("#000000"), BELOW = new THREE.Color("#030303");
@@ -19,105 +17,80 @@ const noop = () => () => {};
 // read by the sea elements so they stay hidden while the artwork is on screen.
 const artState = { t: 1 };
 
-// The cover artwork lives inside the scene, behind the chrome word: the click that enters sets a
-// born-time (the picture settles from a slight over-scale — the pop) and scrolling dissolves it
-// into the sea the word floats over. Contain-fit against the frustum; the artwork's own black
-// surround blends into the page, so its edges never show.
+// The ASCEND artwork lives inside the scene as two layers cut from the cover: the door-and-stairs scene (the word
+// knocked out) and the chrome word on transparency, so the word can move on its own like the reference's hero
+// wordmark. The click that enters sets a born-time (the picture settles from a slight over-scale, the pop) and
+// scrolling dissolves it into the sea. Contain-fit against the frustum; the art's black surround blends into the page.
+//
+// Word effect (reference constants, rebuilt): flips in from pi and from 2x the camera distance over 1.5 s expo-out;
+// leans toward the pointer (0.15 rad, smoothed 0.08 per frame); red/blue split widens with the lean; scrolling turns
+// it back 0.08 pi, pushes it 0.3x further away and drifts it down 12% of its height.
+const WORD = { w: 1340 / 1600, h: 588 / 1600, y: 0.5 - 406 / 1600 }; // crop of the 1600px cover, in cover units
+const LEAN = 0.15, EASE = 0.08, FLIP = Math.PI, DEPTH = 2, TURN = Math.PI * 0.08, RECEDE = 0.3, INTRO = 1.5;
+const SPLIT = { base: 0.0006, tilt: 0.0018 }; // uv units of the word texture: at most ~5px of red/blue spread
+const wordVert = /* glsl */ `varying vec2 v_uv; void main() { v_uv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const wordFrag = /* glsl */ `
+  uniform sampler2D u_tex; uniform vec2 u_split; uniform float u_alpha; varying vec2 v_uv;
+  void main() {
+    vec4 c = texture2D(u_tex, v_uv);
+    // red and blue sampled a hair apart; alpha stays the centre's so the silhouette does not double
+    float r = texture2D(u_tex, v_uv + u_split).r, b = texture2D(u_tex, v_uv - u_split).b;
+    gl_FragColor = vec4(r, c.g, b, c.a * u_alpha);
+    #include <colorspace_fragment>
+  }`;
+const expoOut = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t));
+
 function HeroArt() {
-  const tex = useTexture("/media/ascend-cover.jpeg");
-  const mesh = useRef<THREE.Mesh>(null!), mat = useRef<THREE.MeshBasicMaterial>(null!);
-  const born = useRef(0);
+  const [sceneTex, wordTex] = useTexture(["/media/ascend-scene.jpg", "/media/ascend-word.webp"], (loaded) => {
+    for (const t of [loaded].flat()) t.colorSpace = THREE.SRGBColorSpace;
+  });
+  const group = useRef<THREE.Group>(null!), word = useRef<THREE.Mesh>(null!), mat = useRef<THREE.MeshBasicMaterial>(null!);
+  const [uniforms] = useState(() => ({ u_tex: { value: null as THREE.Texture | null }, u_split: { value: new THREE.Vector2() }, u_alpha: { value: 1 } }));
+  const wmat = useRef<THREE.ShaderMaterial>(null!); // per-frame uniform writes go through the material
+  const born = useRef(0), tilt = useRef(new THREE.Vector2());
   useEffect(() => {
     const on = () => { born.current = performance.now(); };
-    if (!born.current && document.documentElement.classList.contains("entered")) born.current = performance.now() - 900; // returning visitor: no pop
+    if (!born.current && document.documentElement.classList.contains("entered")) born.current = performance.now() - INTRO * 1000; // returning visitor: no intro
     addEventListener("undertow:entered", on);
     return () => removeEventListener("undertow:entered", on);
   }, []);
   useFrame(({ camera }, dt) => {
-    const cam = camera as THREE.PerspectiveCamera;
+    const cam = camera as THREE.PerspectiveCamera, calm = still();
     const fov = (cam.fov * Math.PI) / 180, dist = camera.position.z + 16;
     const visH = 2 * dist * Math.tan(fov / 2), visW = visH * cam.aspect;
-    mesh.current.scale.setScalar(Math.min(visW, visH) * (1 + (still() ? 0 : 0.08 * (born.current ? Math.max(0, 1 - (performance.now() - born.current) / 900) : 1))));
-    mesh.current.position.x = still() ? 0 : mesh.current.position.x + (signal.mx * 0.35 - mesh.current.position.x) * Math.min(1, dt * 3);
+    const since = born.current ? (performance.now() - born.current) / 1000 : 0;
+    const S = Math.min(visW, visH) * (1 + (calm ? 0 : 0.08 * (born.current ? Math.max(0, 1 - since / 0.9) : 1)));
+    const g = group.current;
+    g.scale.setScalar(S);
+    g.position.x = calm ? 0 : g.position.x + (signal.mx * 0.35 - g.position.x) * Math.min(1, dt * 3);
     const fade = 1 - THREE.MathUtils.smoothstep(signal.progress, 0.22, 0.6);
     artState.t = fade;
     mat.current.opacity = fade;
+
+    // the word
+    const intro = calm ? 1 : born.current ? expoOut(Math.min(1, since / INTRO)) : 0, n = 1 - intro, scroll = signal.progress;
+    const t = tilt.current;
+    if (calm) t.set(0, 0); else { const k = Math.min(1, EASE * dt * 60); t.x += (signal.mx - t.x) * k; t.y += (signal.my - t.y) * k; }
+    const w = word.current;
+    w.rotation.set(t.y * LEAN + n * FLIP + scroll * TURN, t.x * LEAN, 0);
+    w.position.set(0, WORD.y - 0.12 * WORD.h * scroll, 0.002 - ((n * DEPTH + scroll * RECEDE) * dist) / S);
+    const split = calm ? 0 : SPLIT.base + (Math.abs(t.x) + Math.abs(t.y)) * SPLIT.tilt;
+    const u = wmat.current.uniforms;
+    u.u_tex.value = wordTex; u.u_split.value.set(split, split * 0.3); u.u_alpha.value = fade;
   });
   return (
-    <mesh ref={mesh} position={[0, 0.45, -16]}>
-      <planeGeometry args={[1, 1]} />
-      <meshBasicMaterial ref={mat} map={tex} map-colorSpace="srgb" transparent depthWrite={false} fog={false} toneMapped={false} />
-    </mesh>
-  );
-}
-
-function Wordmark() {
-  const font = useLoader(FontLoader, "/fonts/helvetiker_bold.typeface.json");
-  const geo = useMemo(() => {
-    const g = new TextGeometry("ASCEND", { font, size: 1, depth: 0.3, curveSegments: 10, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.03, bevelSegments: 5 });
-    g.center();
-    const p = g.attributes.position, R = 8; // positive radius: the word arches over the moon
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), th = x / R; p.setXY(i, (R + y) * Math.sin(th), (R + y) * Math.cos(th) - R); }
-    g.computeVertexNormals();
-    return g;
-  }, [font]);
-  const mesh = useRef<THREE.Mesh>(null!), mat = useRef<THREE.MeshPhysicalMaterial>(null!);
-  const k = useMemo(() => (still() ? 0.2 : 1), []);
-  useFrame(({ clock }, dt) => {
-    const m = mesh.current, t = clock.elapsedTime;
-    m.position.y = 1.5 + Math.sin(t * 0.6) * 0.08 * k;
-    m.rotation.y = THREE.MathUtils.damp(m.rotation.y, signal.mx * 0.14 * k, 3, dt);
-    m.rotation.x = THREE.MathUtils.damp(m.rotation.x, signal.my * 0.06 * k, 3, dt);
-    m.scale.setScalar(1 + signal.bass * 0.05 * k);
-    mat.current.emissiveIntensity = 0.12 + signal.level * 0.45 * k;
-  });
-  return (
-    <mesh ref={mesh} geometry={geo}>
-      <meshPhysicalMaterial ref={mat} color="#e2e5ff" metalness={1} roughness={0.12} clearcoat={1} clearcoatRoughness={0.08} emissive="#c9cdff" emissiveIntensity={0} />
-      <Glints />
-    </mesh>
-  );
-}
-
-// Four-point star glints riding the top and bottom edges of the arched word; they twinkle and swell with the music.
-function Glints() {
-  const tex = useMemo(() => {
-    const s = 128, h = s / 2, c = document.createElement("canvas"); c.width = c.height = s;
-    const g = c.getContext("2d")!, rg = g.createRadialGradient(h, h, 0, h, h, h);
-    rg.addColorStop(0, "#fff"); rg.addColorStop(0.2, "rgba(255,255,255,.5)"); rg.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = rg; g.beginPath(); g.moveTo(h, 0);
-    g.quadraticCurveTo(h, h, s, h); g.quadraticCurveTo(h, h, h, s); g.quadraticCurveTo(h, h, 0, h); g.quadraticCurveTo(h, h, h, 0); g.fill();
-    return new THREE.CanvasTexture(c);
-  }, []);
-  const pts = useMemo(() => [[-2.5, 1], [-1.4, 1], [-0.4, 1], [0.8, 1], [1.8, 1], [2.6, 1], [-2, -1], [0.2, -1], [2.2, -1]]
-    .map(([x, e], i) => { const r = 8 + 0.4 * e; return { x: r * Math.sin(x / 8), y: r * Math.cos(x / 8) - 8, ph: i * 1.9, s: 0.28 + (i % 3) * 0.08 }; }), []);
-  // Long thin diagonal flare through each glint (soft-ended line, rotated ~40°).
-  const streak = useMemo(() => {
-    const w = 256, h = 8, c = document.createElement("canvas"); c.width = w; c.height = h;
-    const g = c.getContext("2d")!, lg = g.createLinearGradient(0, 0, w, 0);
-    lg.addColorStop(0, "rgba(255,255,255,0)"); lg.addColorStop(0.5, "rgba(255,255,255,0.9)"); lg.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = lg; g.fillRect(0, h / 2 - 1, w, 2);
-    return new THREE.CanvasTexture(c);
-  }, []);
-  const refs = useRef<THREE.Sprite[]>([]), rays = useRef<THREE.Sprite[]>([]);
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    refs.current.forEach((sp, i) => {
-      const p = pts[i], k = Math.max(0, Math.sin(t * 1.1 + p.ph)), s = p.s * (0.25 + k * k + signal.level * 0.5);
-      sp.scale.setScalar(s);
-      rays.current[i]?.scale.set(s * 7, s * 0.22, 1);
-    });
-  });
-  return pts.map((p, i) => (
-    <group key={i} position={[p.x, p.y, 0.32]}>
-      <sprite ref={(el) => { if (el) refs.current[i] = el; }}>
-        <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </sprite>
-      <sprite ref={(el) => { if (el) rays.current[i] = el; }}>
-        <spriteMaterial map={streak} rotation={0.7} opacity={0.7} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </sprite>
+    <group ref={group} position={[0, 0.45, -16]}>
+      {/* drawn over the sea (no depth test) so the horizon never crops the stairs; it fades out before the descent */}
+      <mesh renderOrder={1}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial ref={mat} map={sceneTex} transparent depthWrite={false} depthTest={false} fog={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={word} renderOrder={2} scale={[WORD.w, WORD.h, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <shaderMaterial ref={wmat} vertexShader={wordVert} fragmentShader={wordFrag} uniforms={uniforms} transparent depthWrite={false} depthTest={false} side={THREE.DoubleSide} />
+      </mesh>
     </group>
-  ));
+  );
 }
 
 // The moon's light path on the water: a baked falloff of broken horizontal glitter, additive, pulsing with the music.
@@ -227,7 +200,6 @@ export default function Scene() {
         <fogExp2 attach="fog" args={["#000000", 0.03]} />
         <Suspense fallback={null}>
           <HeroArt />
-          <Wordmark />
           <Environment resolution={256}>
             <Lightformer form="rect" intensity={4} color="#eef0ff" position={[0, 5, -6]} scale={[12, 2, 1]} />
             <Lightformer intensity={2.5} position={[-6, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 0.6, 1]} />
