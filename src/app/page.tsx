@@ -17,6 +17,7 @@ const BIO = "I live behind the decks. Weekends in rooms full of smoke and strobe
 const META = [
   { n: "1", text: "The first loop came out of a soundcheck: one synth stab, left running while the room filled up.", link: { label: "Listen ↗", href: "#tracks" } },
   { n: "2", text: "Every track gets played out before it's finished. If the floor doesn't move, it goes back to the studio.", link: { label: "Sequencer ↗", href: "/sequencer" } },
+  { n: "3", text: "ASCEND lives here. Any other address is a copy — the official link is right here and nowhere else.", link: { label: "ascend-music.vercel.app ↗", href: "https://ascend-music.vercel.app" } },
 ];
 const FACTS = [
   { k: "A:", title: "How one drop started it.", text: "One late set, one unreleased edit, and a crowd that wouldn't let me take it off. By the morning the clip was everywhere, and this EP started that night." },
