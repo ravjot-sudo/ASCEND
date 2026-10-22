@@ -115,10 +115,10 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 .grain::before, .grain-layer::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: var(--noise), var(--noise); background-position: 0 0, 74px 106px; opacity: 0.175; }
 .cover-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; outline: none; }
 /* Sleeve: 240u, like the reference's w-240 (230px at 1440, ~233px on a 390px phone). */
-/* Separate channels so they never fight: `scale`+opacity = pop-in, `translate`/`rotate` = the throw on enter.
-   The sleeve and the CD keep their size; only the CD travels with the pointer pull. */
+/* Separate channels so they never fight: `scale`+opacity = pop-in, `transform` = pointer pull (the sleeve grows
+   to 1.4x, the reference's 1 + .4 * pull, and tilts), `translate`/`rotate` = the throw on enter. */
 .cover-box { position: relative; display: block; flex: none; width: calc(var(--u) * 240); height: calc(var(--u) * 240); opacity: 0; scale: 0.6;
- }
+  transform: perspective(1400px) rotateY(calc(var(--pull, 0) * -9deg)) rotateZ(calc(var(--pull, 0) * -1.5deg)) scale(calc(1 + var(--pull, 0) * 0.4)); }
 .cover-wrap.is-ready .cover-box { animation: pop-in 1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 @keyframes pop-in { 0% { opacity: 0; scale: 0.6; } 55% { opacity: 1; scale: 1.045; } 100% { opacity: 1; scale: 1; } }
 .cover { position: absolute; inset: 0; z-index: 1; display: block; overflow: hidden; border-radius: 3px; background: #050505;
