@@ -16,19 +16,21 @@ const set = (s: Partial<State>) => { state = { ...state, ...s }; subs.forEach((f
 export const audioStore = { get: () => state, subscribe: (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; } };
 
 let ctx: AudioContext | null = null, master: GainNode, noise: AudioBuffer;
-let timer = 0, next = 0, step = 0;
+let timer = 0, next = 0, step = 0, pausedAt = 0;
+let startedAt: number | null = null; // AudioContext time the current track began (null = not started; 0 is a valid time)
+let analyser: AnalyserNode | null = null;
 const hz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
 function init() {
   const c = (ctx = new AudioContext());
   master = c.createGain(); master.gain.value = 0;
-  const analyser = c.createAnalyser(); analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.8;
-  master.connect(c.createDynamicsCompressor()).connect(analyser).connect(c.destination);
+  const an = (analyser = c.createAnalyser()); an.fftSize = 256; an.smoothingTimeConstant = 0.8;
+  master.connect(c.createDynamicsCompressor()).connect(an).connect(c.destination);
   noise = c.createBuffer(1, c.sampleRate, c.sampleRate);
   const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  const bins = new Uint8Array(analyser.frequencyBinCount);
+  const bins = new Uint8Array(an.frequencyBinCount);
   const loop = () => {
-    analyser.getByteFrequencyData(bins);
+    an.getByteFrequencyData(bins);
     let s = 0, b = 0; for (let i = 0; i < bins.length; i++) { s += bins[i]; if (i < 6) b += bins[i]; }
     signal.level += (Math.min(1, s / bins.length / 110) - signal.level) * 0.15;
     signal.bass += (b / 6 / 255 - signal.bass) * 0.25;
@@ -75,14 +77,21 @@ function tick() {
 export async function playTrack(i = state.index) {
   if (!ctx) init();
   await ctx!.resume();
-  if (i !== state.index || !timer) { step = 0; next = ctx!.currentTime + 0.06; }
+  const now = ctx!.currentTime;
+  if (i !== state.index || startedAt === null) startedAt = now; else if (!state.playing) startedAt += now - pausedAt;
+  if (i !== state.index || !timer) { step = 0; next = now + 0.06; }
   set({ index: i, playing: true });
   master.gain.setTargetAtTime(0.5, ctx!.currentTime, 0.3);
   if (!timer) timer = window.setInterval(tick, 25);
 }
 export function pause() {
   if (!ctx) return;
-  master.gain.setTargetAtTime(0, ctx.currentTime, 0.12); clearInterval(timer); timer = 0; set({ playing: false });
+  pausedAt = ctx.currentTime; master.gain.setTargetAtTime(0, ctx.currentTime, 0.12); clearInterval(timer); timer = 0; set({ playing: false });
 }
 export const toggle = () => (state.playing ? pause() : playTrack());
 export const nextTrack = () => playTrack((state.index + 1) % TRACKS.length);
+export const prevTrack = () => playTrack((state.index + TRACKS.length - 1) % TRACKS.length);
+/** Seconds into the current track (frozen while paused). */
+export const elapsed = () => (ctx && startedAt !== null ? (state.playing ? ctx.currentTime : pausedAt) - startedAt : 0);
+/** Copies the live spectrum (0–255 per bin) into `out`; returns false before the engine starts. */
+export const readWave = (out: Uint8Array<ArrayBuffer>) => { if (!analyser) return false; analyser.getByteFrequencyData(out); return true; };

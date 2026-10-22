@@ -1,4 +1,5 @@
 import Scene from "@/components/Scene";
+import { MediaPanel } from "@/components/MediaPanel";
 import { Gate, Notes, Player, SmoothScroll, Tracklist } from "@/components/ui";
 
 const NOTES = [
@@ -27,25 +28,36 @@ export default function Home() {
       <Player />
 
       <header className="micro fixed inset-x-0 top-0 z-30 grid grid-cols-12 gap-x-5 px-4 pt-4 sm:px-6">
-        <a href="#top" className="col-span-3 hover:text-glint">Tidewell</a>
-        <nav aria-label="Sections" className="col-span-5 hidden gap-6 md:flex">
-          <a href="#notes" className="hover:text-glint">Notes</a>
+        <a href="#top" className="col-span-3 font-semibold hover:text-glint md:col-span-2">Tidewell°</a>
+        <nav aria-label="Sections" className="col-span-5 hidden gap-8 md:flex">
           <a href="#tracks" className="hover:text-glint">Listen</a>
+          <a href="#notes" className="hover:text-glint">Notes</a>
           <a href="#dates" className="hover:text-glint">Tide table</a>
         </nav>
-        <p className="col-span-9 text-right leading-relaxed text-mute md:col-span-4">
-          “Undertow” debut EP<br />Side A: Undertow, Salt Choir<br />Side B: Low Water, Riptide Hymn<br />Out 21.11.2026
+        <p className="col-span-7 leading-snug md:col-span-4">
+          “Undertow” debut EP<br /><span className="text-mute">Side A:</span> Undertow, Salt Choir<br /><span className="text-mute">Side B:</span> Low Water, Riptide Hymn<br />21.11.2026 · 00:00<br /><span className="text-mute">Generated live · ©2026</span>
         </p>
+        <a href="#tracks" className="col-span-2 text-right hover:text-glint md:col-span-1">Play ↓</a>
       </header>
 
       <main id="top">
         <section className="relative h-[220vh]">
           <h1 className="sr-only">Tidewell, Undertow EP</h1>
-          <p className="micro absolute top-[calc(100svh-6rem)] sm:top-[calc(100svh-3rem)] left-1/2 -translate-x-1/2 text-mute">Scroll to go under ↓</p>
+          <div className="micro pointer-events-none absolute inset-x-0 top-0 h-svh">
+            <span className="absolute top-1/2 left-4 sm:left-6">EP</span>
+            <span className="absolute top-1/2 right-4 sm:right-6">I–IV</span>
+            <span className="absolute bottom-6 left-6 hidden text-mute sm:block">WebAudio · 4 tracks</span>
+            <span className="absolute bottom-20 left-1/2 -translate-x-1/2 text-mute sm:bottom-6">Scroll to go under ↓</span>
+          </div>
         </section>
 
         <section id="notes" aria-label="Sleeve notes" className="px-4 py-[16vh] sm:px-6">
           <Notes items={NOTES} />
+        </section>
+
+        <section aria-label="Film" className="grid grid-cols-12 gap-x-5 px-4 pt-[6vh] sm:px-6">
+          <MediaPanel still="/media/moon-sea.webp" video="/media/moon-sea.mp4" label="Moonlight on open water, a rendered loop" className="col-span-12 aspect-[3/4] sm:col-span-6 sm:col-start-4 md:col-span-4 md:col-start-7" />
+          <p className="micro col-span-12 pt-3 leading-relaxed text-mute md:col-span-2 md:col-start-11 md:pt-0">● Undertow<br />Open water (rendered)</p>
         </section>
 
         <section id="tracks" aria-label="Tracklist" className="px-4 py-[14vh] sm:px-6">

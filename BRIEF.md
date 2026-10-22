@@ -9,7 +9,13 @@
 - **Ours, deliberately different:**
   - **Story:** descent under water instead of an ascent to a door.
   - **Wordmark:** sags like a wave trough over a reflective sea, and the camera sinks below the surface.
-  - **Palette:** ink-teal with a cold cyan glint. Type is Geist + Geist Mono.
+  - **Palette:** pure black #000 and white #fff with chrome/silver. Type is Geist + Geist Mono.
   - **Music:** generated live with WebAudio (no files), and the analyser drives the scene.
   - **Content:** a tide table instead of live photos. The artist, title, copy and tracks are fictional.
+  - **Opening (after Ascension's component set):**
+    - Square enter tile, corner credits, EP / I–IV side labels.
+    - Upward-arched chrome wordmark with four-point glints.
+    - A moon on the horizon where they have a door, figure and stairs.
+  - **Video panel (P32):** our own Blender loop (`art/moon_sea.py` → `public/media/moon-sea.mp4`). The cursor chip toggles the live EP sound instead of the clip's audio.
+  - **Player panel:** a tracks grid, a silver disc with a fixed sheen and a spinning label, the analyser spectrum bars, and transport. It follows Ascension's mobile player, with our own disc and data.
 - **Assets:** helvetiker_bold typeface JSON (MgOpen licence, `public/fonts/LICENSE-MgOpen.txt`). Everything else is code.

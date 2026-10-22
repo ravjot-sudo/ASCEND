@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #071113;
-  --fg: #e6f0ef;
-  --mute: #7f9694;
-  --line: rgb(230 240 239 / 0.14);
-  --glint: #9ff3ff;
+  --ink: #000000;
+  --fg: #ffffff;
+  --mute: #7d7d7d;
+  --line: rgb(255 255 255 / 0.14);
+  --glint: #ffffff;
 }
 @theme inline {
   --color-ink: var(--ink);
@@ -21,15 +21,28 @@ body { font-family: var(--font-sans), system-ui, sans-serif; -webkit-font-smooth
 ::selection { background: var(--glint); color: var(--ink); }
 :focus-visible { outline: 2px solid var(--glint); outline-offset: 3px; }
 
-.dots { background-image: radial-gradient(circle at 1px 1px, rgb(230 240 239 / 0.07) 1px, transparent 0); background-size: 6px 6px; }
+.dots { background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.06) 1px, transparent 0); background-size: 6px 6px; }
 .micro { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .note { font-weight: 700; font-size: clamp(28px, 3.6vw, 60px); line-height: 1.04; letter-spacing: -0.028em; }
 .note span { opacity: clamp(0.22, calc(var(--p, 0) * var(--n) * 1.2 - var(--i)), 1); transition: opacity 0.25s linear; }
 
-.gate::before { content: ""; position: absolute; inset: -1px; border-radius: 9999px; border: 1px solid var(--glint); animation: ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
-@keyframes ripple { from { transform: scale(1); opacity: 0.7; } to { transform: scale(1.7); opacity: 0; } }
+.gate::before { content: ""; position: absolute; inset: -1px; border: 1px solid var(--glint); animation: ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+@keyframes ripple { from { transform: scale(1); opacity: 0.5; } to { transform: scale(1.35); opacity: 0; } }
+.chrome { background: linear-gradient(180deg, #fff 0%, #a9a9a9 46%, #f4f4f4 54%, #5f5f5f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Player disc: silver sheen stays put (like light on a real disc) while the label spins. */
+.disc { position: relative; width: min(52vw, 190px); aspect-ratio: 1; border-radius: 9999px;
+  background: repeating-radial-gradient(circle, rgb(0 0 0 / 0.08) 0 1px, transparent 1px 3px),
+    conic-gradient(from 30deg, #5e5e5e, #f4f4f4 11%, #8c8c8c 24%, #dcdcdc 37%, #555 50%, #f0f0f0 61%, #7a7a7a 74%, #e2e2e2 87%, #5e5e5e);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.18), 0 24px 60px -24px rgb(255 255 255 / 0.3); }
+.disc-spin { position: absolute; inset: 0; border-radius: 9999px; display: grid; place-items: center; animation: spin 3.6s linear infinite;
+  background: radial-gradient(circle, #111 0 3.5%, #000 4% 31%, rgb(255 255 255 / 0.25) 31.5%, transparent 32.5%); }
+.disc-spin span { transform: translateY(-15px); font: 700 9px/1 var(--font-sans), sans-serif; letter-spacing: -0.02em; color: #fff; }
+.disc-spin.paused { animation-play-state: paused; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @media (prefers-reduced-motion: reduce) {
+  .disc-spin { animation: none; }
   .note span { opacity: 1; transition: none; }
   .gate::before { animation: none; }
 }
