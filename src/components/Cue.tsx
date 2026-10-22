@@ -1,9 +1,11 @@
 "use client";
 // Track cues (rebuilt from the reference's observed behaviour, our own code): hovering any [data-cue] mention in the
-// section dims the section to #232323, lights every mention of that track in white, and shows that track's clip in a
-// fixed panel (top 12u, the first 5 columns, radius 4u). Leaving the section clears it; scrolling faster than
-// 2 viewport-heights per second cancels the cue and switches cues off until the scroll settles.
+// section dims the section to #232323, lights every mention of that track in white, and shows that track's video in a
+// fixed panel (top 12u, the first 5 columns, radius 4u) — the actual YouTube video for that side, streaming muted.
+// Leaving the section clears it; scrolling faster than 2 viewport-heights per second cancels the cue and switches
+// cues off until the scroll settles.
 import { useEffect, useRef, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { TRACKS, youTubeReady, type YTPlayer } from "@/lib/audio";
 
 const CLIPS: Record<string, { video: string; still: string }> = {
   I: { video: "/media/moon-sea.mp4", still: "/media/moon-sea.webp" },
@@ -43,22 +45,46 @@ export function CueSection({ className = "", style, children }: { className?: st
   return <section ref={el} className={className} style={style}>{children}</section>;
 }
 
+const sideId = (side: string) => TRACKS.find((t) => t.side === side)!.id;
+
 export function CuePreview() {
   const c = useSyncExternalStore(store.sub, store.get, () => null);
-  const clip = useRef<HTMLVideoElement>(null);
+  const host = useRef<HTMLDivElement>(null);
+  const player = useRef<YTPlayer | null>(null);
+  const pending = useRef<string | null>(null);
+
   useEffect(() => {
-    const v = clip.current;
-    if (!v) return;
-    if (!c) { v.pause(); return; }
-    const src = CLIPS[c].video;
-    if (!v.src.endsWith(src)) v.src = src;
-    v.currentTime = 0;
-    v.play().catch(() => {});
+    if (!c) { pending.current = null; player.current?.stopVideo(); return; }
+    pending.current = c;
+    youTubeReady().then(() => {
+      if (!host.current) return;
+      if (!player.current) {
+        player.current = new window.YT!.Player(host.current, {
+          width: "100%", height: "100%",
+          playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, iv_load_policy: 3, playsinline: 1, mute: 1 },
+          events: {
+            onReady: () => {
+              player.current!.setVolume(0);
+              if (pending.current) player.current!.loadVideoById(sideId(pending.current));
+            },
+          },
+        });
+      } else {
+        player.current.loadVideoById(sideId(c));
+        player.current.playVideo();
+      }
+    });
   }, [c]);
+
   return (
     <div aria-hidden className="site pointer-events-none fixed inset-x-0 z-[70]" style={{ top: "calc(var(--u) * 12)" }}>
-      <div className={`col-span-4 overflow-hidden transition-opacity duration-200 s:col-span-5 ${c ? "opacity-100" : "opacity-0"}`} style={{ borderRadius: "calc(var(--u) * 4)", aspectRatio: "16 / 9" }}>
-        <video ref={clip} muted loop playsInline preload="none" poster={c ? CLIPS[c].still : undefined} className="size-full object-cover" />
+      <div className={`col-span-4 relative overflow-hidden transition-opacity duration-200 bg-[#0b0b0b] s:col-span-5 ${c ? "opacity-100" : "opacity-0"}`} style={{ borderRadius: "calc(var(--u) * 4)", aspectRatio: "16 / 9" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {c && <img src={CLIPS[c].still} alt="" aria-hidden className="absolute inset-0 size-full object-cover" />}
+        {/* the YT player mount: scaled a touch to keep the API's title chip out of frame */}
+        <div className="absolute inset-0 overflow-hidden" style={{ pointerEvents: "none" }}>
+          <div ref={host} className="size-full" style={{ transform: "scale(1.25) translateY(-12%)" }} />
+        </div>
       </div>
     </div>
   );

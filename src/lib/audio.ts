@@ -18,16 +18,20 @@ const subs = new Set<() => void>();
 const set = (s: Partial<State>) => { state = { ...state, ...s }; subs.forEach((f) => f()); };
 export const audioStore = { get: () => state, subscribe: (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; } };
 
-interface YTPlayer {
+export type YTPlayer = {
   loadVideoById(id: string): void;
   playVideo(): void;
   pauseVideo(): void;
+  stopVideo(): void;
+  mute(): void;
   getCurrentTime(): number;
   setVolume(volume: number): void;
-}
+};
 interface YTNamespace {
   Player: new (element: HTMLElement | string, options: {
-    videoId: string;
+    width?: string;
+    height?: string;
+    videoId?: string;
     playerVars?: Record<string, string | number>;
     events?: {
       onReady?: () => void;
@@ -42,6 +46,11 @@ let frozenAt = 0; // seconds into the current track (frozen while paused)
 let raf = 0, lastT = 0;
 const bins = new Uint8Array(128); // local stand-in spectrum, kept in 0–255 like the old analyser
 const targets = new Float32Array(bins.length);
+
+/** Resolves once the YouTube IFrame API is available (any module may mount its own player off it). */
+export function youTubeReady(): Promise<void> {
+  return loadAPI();
+}
 
 function loadAPI(): Promise<void> {
   if (apiPromise) return apiPromise;

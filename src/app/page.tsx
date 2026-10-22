@@ -111,7 +111,7 @@ export default function Home() {
         </section>
 
         <section aria-label="Tidewell notes" className="site mt-var text-mute" style={mt(125, 260)}>
-          <MediaPanel still="/media/moon-sea-close.webp" video="/media/moon-sea-close.mp4" label="Glitter on the water, a rendered loop" className="mt-var col-span-4 row-start-2 aspect-[487/754] s:row-start-1" style={mt(100, 0)} />
+          <MediaPanel still="/media/ascend-concert.jpg" video="/media/ascend-concert.mp4" label="The crowd under the rig, looping footage" className="mt-var col-span-4 row-start-2 aspect-[487/754] s:row-start-1" style={mt(100, 0)} />
           <div className="t-meta col-span-4 row-start-3 mt-10 hidden s:col-span-2 s:col-start-5 s:row-start-1 s:mt-0 s:block" style={{ lineHeight: U(16) }}>
             {META.map((m, i) => (
               <div key={m.n} className="relative" style={{ marginTop: i ? U(55) : 0 }}>
