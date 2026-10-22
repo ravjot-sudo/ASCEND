@@ -1,7 +1,7 @@
 "use client";
 // Sequencer screen, laid out to the reference's measured page (1440 px: tracks panel 216u wide, controls 4 x 3 cells
 // of 45u, a 16-step grid with 7u column gaps, 3u radii, a full-width share bar), with our own kits and sounds.
-import { useEffect, useSyncExternalStore, type CSSProperties } from "react";
+import { useCallback, useEffect, useSyncExternalStore, type CSSProperties } from "react";
 import { pause as pauseReal, playTrack, TRACKS } from "@/lib/audio";
 import {
   KITS, clearAll, copyPattern, hydrate, markCopied, pastePattern, play, preview, resetLoop, selectKit, selectPattern,
@@ -14,20 +14,24 @@ const radius: CSSProperties = { borderRadius: U(3) };
 
 export function Sequencer() {
   const s = useSyncExternalStore(seq.subscribe, seq.get, seq.server);
+  // Play runs the toy kit AND the real song; kits and sides stay in sync.
+  const start = useCallback(() => { play(); playTrack(seq.get().kit); }, []);
+  const end = useCallback(() => { stop(); pauseReal(); }, []);
+  const pickKit = useCallback((i: number) => { const was = seq.get().playing; selectKit(i); if (was && i !== seq.get().kit) playTrack(i); }, []);
+  const share = useCallback(async () => {
+    try { await navigator.clipboard.writeText(shareUrl()); markCopied(true); setTimeout(() => markCopied(false), 1600); } catch {}
+  }, []);
   useEffect(() => {
     hydrate();
     // No gate on this page: reveal the header straight away.
     document.documentElement.classList.add("entered");
     dispatchEvent(new Event("undertow:entered"));
-    const key = (e: KeyboardEvent) => { if (e.code === "Space" && !(e.target as HTMLElement)?.closest("button, input")) { e.preventDefault(); if (seq.get().playing) stop(); else play(); } };
+    const key = (e: KeyboardEvent) => { if (e.code === "Space" && !(e.target as HTMLElement)?.closest("button, input")) { e.preventDefault(); if (seq.get().playing) end(); else start(); } };
     addEventListener("keydown", key);
-    return () => { removeEventListener("keydown", key); stop(); };
-  }, []);
+    return () => { removeEventListener("keydown", key); stop(); pauseReal(); };
+  }, [start, end]);
 
   const kit = KITS[s.kit], p = s.pattern[s.kit], grid = s.grids[s.kit][p];
-  const share = async () => {
-    try { await navigator.clipboard.writeText(shareUrl()); markCopied(true); setTimeout(() => markCopied(false), 1600); } catch {}
-  };
   const cell = "hoverable flex items-center justify-center shadow-[inset_-1px_-1px_0_var(--line-strong)]";
   const row45: CSSProperties = { height: U(45) };
 
@@ -37,7 +41,7 @@ export function Sequencer() {
         <div className={`${panel} overflow-hidden`} style={radius}>
           <p className="flex items-center border-b border-[var(--line-strong)]" style={{ height: U(35), paddingLeft: U(8) }}>● TRACKS</p>
           {KITS.map((k, i) => (
-            <button key={k.slug} onClick={() => selectKit(i)} aria-pressed={i === s.kit}
+            <button key={k.slug} onClick={() => pickKit(i)} aria-pressed={i === s.kit}
               className={`hoverable flex w-full items-center text-left ${i < KITS.length - 1 ? "border-b border-[var(--line-strong)]" : ""} ${i === s.kit ? "bg-[var(--surface-2)]" : ""}`}
               style={{ ...row45, paddingLeft: U(10), paddingRight: U(9) }}>
               <span aria-hidden className={`shrink-0 ${i === s.kit ? "bg-[#96ff1e]" : "bg-[var(--mute)]"}`} style={{ width: U(2), height: U(12) }} />
@@ -47,11 +51,11 @@ export function Sequencer() {
           ))}
         </div>
         <div className={`${panel} grid grid-cols-4 overflow-hidden`} style={radius}>
-          <button onClick={play} className={cell} style={row45} aria-pressed={s.playing}>
+          <button onClick={start} className={cell} style={row45} aria-pressed={s.playing}>
             <svg aria-hidden viewBox="0 0 8 10" className="fill-current" style={{ width: U(8), height: U(10) }}><path d="M0 0v10l8-5z" /></svg>
             <span style={{ marginLeft: U(5) }}>Play</span>
           </button>
-          <button onClick={stop} className={cell} style={row45}>
+          <button onClick={end} className={cell} style={row45}>
             <span aria-hidden className="bg-current" style={{ width: U(10), height: U(10) }} />
             <span style={{ marginLeft: U(7) }}>Stop</span>
           </button>
