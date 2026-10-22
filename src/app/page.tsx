@@ -41,7 +41,7 @@ export default function Home() {
       <main id="top">
         <section className="relative h-[220vh]">
           <h1 className="sr-only">Tidewell, Undertow EP</h1>
-          <p className="micro absolute top-[calc(100svh-3rem)] left-1/2 -translate-x-1/2 text-mute">Scroll to go under ↓</p>
+          <p className="micro absolute top-[calc(100svh-6rem)] sm:top-[calc(100svh-3rem)] left-1/2 -translate-x-1/2 text-mute">Scroll to go under ↓</p>
         </section>
 
         <section id="notes" aria-label="Sleeve notes" className="px-4 py-[16vh] sm:px-6">

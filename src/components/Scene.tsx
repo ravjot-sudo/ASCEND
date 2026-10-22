@@ -46,7 +46,8 @@ function Rig() {
     const p = signal.progress, under = THREE.MathUtils.smoothstep(p, 0.35, 0.65);
     camera.position.x = THREE.MathUtils.damp(camera.position.x, signal.mx * 0.4, 2, dt);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, THREE.MathUtils.lerp(0.9, -3.4, p), 4, dt);
-    camera.position.z = THREE.MathUtils.lerp(8.5, 6.8, p);
+    const fit = Math.max(1, 1.9 / (camera as THREE.PerspectiveCamera).aspect); // keep the whole word in frame on narrow screens
+    camera.position.z = THREE.MathUtils.lerp(10.5, 8.5, p) * fit;
     camera.lookAt(0, THREE.MathUtils.lerp(0.7, 0.5, p), 0);
     const bg = scene.background as THREE.Color, fog = scene.fog as THREE.FogExp2;
     bg.lerpColors(ABOVE, BELOW, under); fog.color.copy(bg); fog.density = 0.03 + under * 0.06;
@@ -66,7 +67,7 @@ export default function Scene() {
   if (!ok) return null;
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-      <Canvas dpr={[1, 1.75]} camera={{ position: [0, 0.9, 8.5], fov: 35 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
+      <Canvas dpr={[1, 1.75]} camera={{ position: [0, 0.9, 10.5], fov: 35 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
         <color attach="background" args={["#071113"]} />
         <fogExp2 attach="fog" args={["#071113", 0.03]} />
         <Suspense fallback={null}>
@@ -84,7 +85,7 @@ export default function Scene() {
         </mesh>
         <mesh rotation-x={Math.PI / 2} position-y={-1.41}>
           <planeGeometry args={[80, 80]} />
-          <meshBasicMaterial color="#1b6a70" transparent opacity={0.35} />
+          <meshBasicMaterial color="#2a8a90" transparent opacity={0.18} />
         </mesh>
         <Sparkles count={50} scale={[8, 2.2, 1.5]} position={[0, 1.3, 0.4]} size={3} speed={0.35} color="#d8fbff" />
         <Sparkles count={140} scale={[16, 5, 10]} position={[0, -4, 0]} size={2.2} speed={0.6} opacity={0.6} color="#7fe9f2" />
